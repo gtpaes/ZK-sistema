@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZK SurfHouse — Painel Administrativo</title>
+    <meta name="description" content="Sistema administrativo interno da ZK SurfHouse: clientes, produtos, estoque, vendas, consertos, aulas e financeiro." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="icon" href="assets/img/ZKlogo.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="stylesheet" href="assets/css/dashboard.css" />
+    <link rel="stylesheet" href="assets/css/clientes.css" />
+    <link rel="stylesheet" href="assets/css/modules.css" />
+    <link rel="stylesheet" href="assets/css/responsive.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- ============ MENU LATERAL ============ -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar__brand">
+          <div class="brand__mark"><img id="brandLogo" src="assets/img/ZKlogo.png" alt="Logo ZK SurfHouse" /></div>
+          <div class="brand__text">
+            <strong id="brandName">ZK SurfHouse</strong>
+            <span>Painel Administrativo</span>
+          </div>
+        </div>
+
+        <nav class="sidebar__nav">
+          <p class="nav__label">Geral</p>
+          <a class="nav__item is-active" data-page="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></a>
+          <a class="nav__item" data-page="clientes"><i class="fa-solid fa-users"></i><span>Clientes</span></a>
+
+          <p class="nav__label">Operação</p>
+          <a class="nav__item" data-page="produtos"><i class="fa-solid fa-box-open"></i><span>Produtos</span></a>
+          <a class="nav__item" data-page="estoque"><i class="fa-solid fa-warehouse"></i><span>Estoque</span></a>
+          <a class="nav__item" data-page="vendas"><i class="fa-solid fa-cart-shopping"></i><span>Vendas</span></a>
+          <a class="nav__item" data-page="consertos"><i class="fa-solid fa-screwdriver-wrench"></i><span>Consertos</span></a>
+          <a class="nav__item" data-page="aulas"><i class="fa-solid fa-person-swimming"></i><span>Aulas</span></a>
+
+          <p class="nav__label">Gestão</p>
+          <a class="nav__item" data-page="financeiro"><i class="fa-solid fa-sack-dollar"></i><span>Financeiro</span></a>
+          <a class="nav__item" data-page="relatorios"><i class="fa-solid fa-file-lines"></i><span>Relatórios</span></a>
+          <a class="nav__item" data-page="config"><i class="fa-solid fa-gear"></i><span>Configurações</span></a>
+        </nav>
+
+        <div class="sidebar__foot">
+          <div class="wave-card">
+            <i class="fa-solid fa-life-ring"></i>
+            <p>Dados salvos localmente no navegador.</p>
+          </div>
+        </div>
+      </aside>
+      <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+      <!-- ============ CONTEÚDO ============ -->
+      <div class="main">
+        <header class="topbar">
+          <button class="icon-btn only-mobile" id="btnMenu" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+          <div class="topbar__title">
+            <h1 id="pageTitle">Dashboard</h1>
+            <p id="pageSubtitle">Visão geral da operação</p>
+          </div>
+          <div class="topbar__actions">
+            <div class="search-global">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input id="globalSearch" type="search" placeholder="Buscar cliente, produto, OS..." />
+            </div>
+            <button class="icon-btn theme-btn" id="btnTheme" data-tip="Alternar tema"><i class="fa-solid fa-moon"></i></button>
+            <div class="user-chip">
+              <span class="avatar" id="userInitials">ZK</span>
+              <div>
+                <strong id="userName">Administrador</strong>
+                <small id="userRole">Acesso total</small>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main class="content" id="content"><!-- páginas renderizadas via JS --></main>
+      </div>
+    </div>
+
+    <!-- ============ MODAL GENÉRICO ============ -->
+    <div class="modal" id="modal" aria-hidden="true">
+      <div class="modal__backdrop" data-close></div>
+      <div class="modal__box" role="dialog" aria-modal="true">
+        <header class="modal__head">
+          <h3 id="modalTitle">Título</h3>
+          <button class="icon-btn" data-close aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+        <div class="modal__body" id="modalBody"></div>
+        <footer class="modal__foot" id="modalFoot"></footer>
+      </div>
+    </div>
+
+    <div class="toasts" id="toasts"></div>
+    <div class="loader" id="loader"><span class="spinner"></span></div>
+
+    <script src="assets/js/storage.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/ui.js"></script>
+    <script src="assets/js/dashboard.js"></script>
+    <script src="assets/js/clientes.js"></script>
+    <script src="assets/js/produtos.js"></script>
+    <script src="assets/js/vendas.js"></script>
+    <script src="assets/js/consertos.js"></script>
+    <script src="assets/js/aulas.js"></script>
+    <script src="assets/js/financeiro.js"></script>
+    <script src="assets/js/relatorios.js"></script>
+    <script src="assets/js/app.js"></script>
+  </body>
+</html>

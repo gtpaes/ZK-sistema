@@ -1,0 +1,283 @@
+/* Dashboard — KPIs, gráficos simulados, listas */
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.kpi {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--t),
+    box-shadow var(--t);
+}
+.kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+.kpi::after {
+  content: "";
+  position: absolute;
+  right: -30px;
+  bottom: -40px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  opacity: 0.55;
+}
+.kpi__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+.kpi__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.kpi--accent .kpi__icon {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.kpi--warn .kpi__icon {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.kpi--danger .kpi__icon {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.kpi--success .kpi__icon {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.kpi__label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.kpi__value {
+  font-family: var(--font-display);
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  margin-top: 12px;
+  position: relative;
+  z-index: 1;
+}
+.kpi__foot {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* Gráfico de barras (CSS puro) */
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  height: 210px;
+  padding-top: 10px;
+}
+.chart-bars .bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  justify-content: flex-end;
+}
+.chart-bars .bar {
+  width: 100%;
+  max-width: 42px;
+  border-radius: 10px 10px 4px 4px;
+  background: linear-gradient(180deg, var(--accent), var(--primary));
+  animation: grow 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  position: relative;
+  min-height: 4px;
+}
+.chart-bars .bar:hover::after {
+  content: attr(data-value);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ocean-900);
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+  margin-bottom: 6px;
+}
+@keyframes grow {
+  from {
+    height: 0 !important;
+    opacity: 0.2;
+  }
+}
+.chart-bars .bar-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Donut (conic-gradient) */
+.donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.donut {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+}
+.donut::after {
+  content: "";
+  position: absolute;
+  inset: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+}
+.donut__center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+  text-align: center;
+}
+.donut__center strong {
+  font-family: var(--font-display);
+  font-size: 22px;
+  display: block;
+}
+.donut__center span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 13px;
+  flex: 1;
+  min-width: 150px;
+}
+.legend div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.legend .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.legend .val {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+/* Barra de progresso */
+.progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.progress-item span {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  margin-bottom: 6px;
+}
+.progress-track {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  animation: widen 0.8s ease both;
+}
+@keyframes widen {
+  from {
+    width: 0 !important;
+  }
+}
+
+/* Timeline / listas */
+.mini-list {
+  display: flex;
+  flex-direction: column;
+}
+.mini-list__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.mini-list__item:last-child {
+  border-bottom: 0;
+}
+.mini-list__item .ico {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--primary);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.mini-list__item strong {
+  display: block;
+  font-size: 13.5px;
+}
+.mini-list__item small {
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+.mini-list__item .right {
+  margin-left: auto;
+  text-align: right;
+}

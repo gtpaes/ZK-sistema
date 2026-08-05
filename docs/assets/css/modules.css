@@ -1,0 +1,302 @@
+/* modules.css — componentes dos módulos Produtos, Estoque, Vendas, Aulas e Relatórios */
+
+/* ---------- Listas ---------- */
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.list__item strong {
+  font-size: 14px;
+  display: block;
+}
+.list__item small {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ---------- Abas ---------- */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.tab {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  padding: 8px 16px;
+  border-radius: 99px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all var(--t);
+}
+.tab:hover {
+  color: var(--text);
+  border-color: var(--primary);
+}
+.tab.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+/* ---------- PDV / Vendas ---------- */
+.pdv {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.pdv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+  gap: 10px;
+}
+.pdv-card {
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: all var(--t);
+}
+.pdv-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.pdv-card.is-off {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pdv-card__cat {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.pdv-card strong {
+  font-size: 13.5px;
+  line-height: 1.3;
+}
+.pdv-card__price {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--primary);
+  font-weight: 700;
+}
+.pdv-card small {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.cart {
+  position: sticky;
+  top: 84px;
+}
+.cart-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+  max-height: 320px;
+  overflow: auto;
+}
+.cart-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.cart-item strong {
+  font-size: 13.5px;
+}
+.cart-item small {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.cart-item__qty {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cart-item__qty input {
+  width: 46px;
+  text-align: center;
+  padding: 5px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.qty-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+}
+.qty-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.cart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 26px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.cart-empty i {
+  font-size: 26px;
+  color: var(--border);
+}
+.cart-totals {
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13.5px;
+}
+.cart-totals div {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+}
+.cart-totals .is-total {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text);
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- Recibo ---------- */
+.receipt {
+  font-size: 13.5px;
+}
+.receipt__head {
+  text-align: center;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--border);
+}
+.receipt__head strong {
+  display: block;
+  font-size: 18px;
+}
+.receipt__head span {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+.receipt__meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px 0;
+}
+.receipt__meta small {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.receipt__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+.receipt__table th,
+.receipt__table td {
+  text-align: left;
+  padding: 7px 6px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+.receipt__totals {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.receipt__totals div {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+}
+.receipt__totals .is-total {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+.receipt__foot {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 14px;
+}
+
+/* ---------- Relatórios ---------- */
+.bar-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.bar-list__top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+.bar {
+  height: 9px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+@media (max-width: 1024px) {
+  .pdv {
+    grid-template-columns: 1fr;
+  }
+  .cart {
+    position: static;
+  }
+}
