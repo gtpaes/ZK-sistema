@@ -1,8 +1,13 @@
-/** aulas.js — Professores, turmas/alunos e mensalidades */
+/** aulas.js — Professores, turmas/alunos, mensalidades e agenda (calendário) */
 
 const Aulas = (() => {
-  const state = { tab: "alunos", term: "" };
+  const state = { tab: "alunos", term: "", cal: { ano: new Date().getFullYear(), mes: new Date().getMonth() }, prof: "" };
   const NIVEIS = ["Iniciante", "Intermediário", "Avançado"];
+  const HORARIOS = ["07:00", "08:00", "09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "19:00"];
+  const STATUS_AULA = ["Agendada", "Realizada", "Cancelada"];
+
+  const corStatus = (s) =>
+    s === "Realizada" ? "success" : s === "Cancelada" ? "danger" : s === "Agendada" ? "info" : "";
 
   /* ---------- Render ---------- */
   function render() {
@@ -24,7 +29,7 @@ const Aulas = (() => {
       </div>
 
       <div class="tabs">
-        ${["alunos", "turmas", "professores"].map((t) => `<button class="tab ${state.tab === t ? "is-active" : ""}" data-tab="${t}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("")}
+        ${["alunos", "turmas", "professores", "agenda"].map((t) => `<button class="tab ${state.tab === t ? "is-active" : ""}" data-tab="${t}">${t === "agenda" ? "Agenda" : t[0].toUpperCase() + t.slice(1)}</button>`).join("")}
       </div>
 
       <div class="card">
@@ -33,9 +38,135 @@ const Aulas = (() => {
           <div class="search"><i class="fa-solid fa-magnifying-glass"></i>
             <input id="aulaSearch" type="search" placeholder="Buscar aluno..." value="${Utils.escape(state.term)}" />
           </div>
+        </div>` : state.tab === "agenda" ? `
+        <div class="toolbar">
+          <div class="search"><i class="fa-solid fa-magnifying-glass"></i>
+            <input id="agendaSearch" type="search" placeholder="Filtrar por aluno ou professor..." value="${Utils.escape(state.term)}" />
+          </div>
+          <select id="agendaProf">
+            <option value="">Todos os professores</option>
+            ${professores.map((p) => `<option ${state.prof === p.nome ? "selected" : ""}>${Utils.escape(p.nome)}</option>`).join("")}
+          </select>
+          <button class="btn btn--primary" id="btnNovaAula"><i class="fa-solid fa-plus"></i>Marcar aula</button>
         </div>` : ""}
-        <div class="table-wrap">${tabela(alunos, turmas, professores)}</div>
+        <div class="table-wrap">${state.tab === "agenda" ? calendario() : tabela(alunos, turmas, professores)}</div>
       </div>`;
+  }
+
+  /* ---------- Calendário ---------- */
+  function calendario() {
+    const { ano, mes } = state.cal;
+    const primeiro = new Date(ano, mes, 1);
+    const primeiroSemana = primeiro.getDay();
+    const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+    const nomeMes = primeiro.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    const hoje = new Date();
+    const hj = hoje.getFullYear() === ano && hoje.getMonth() === mes ? hoje.getDate() : 0;
+
+    const agenda = DB.aulas.all().filter((a) => {
+      if (!a.data) return false;
+      const d = new Date(a.data.slice(0, 10) + "T12:00:00");
+      if (d.getFullYear() !== ano || d.getMonth() !== mes) return false;
+      if (state.prof && a.professor !== state.prof) return false;
+      if (state.term && !`${a.aluno} ${a.professor}`.toLowerCase().includes(state.term.toLowerCase())) return false;
+      return true;
+    });
+
+    const porDia = {};
+    agenda.forEach((a) => {
+      const dia = new Date(a.data.slice(0, 10) + "T12:00:00").getDate();
+      (porDia[dia] = porDia[dia] || []).push(a);
+    });
+
+    const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    let html = `<div class="cal-head">
+        <button class="icon-btn" data-calnav="-1"><i class="fa-solid fa-chevron-left"></i></button>
+        <strong>${nomeMes}</strong>
+        <button class="icon-btn" data-calnav="1"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+      <div class="cal-grid cal-grid--head">${dias.map((d) => `<div class="cal-cell cal-cell--head">${d}</div>`).join("")}</div>
+      <div class="cal-grid">`;
+
+    for (let i = 0; i < primeiroSemana; i++) html += `<div class="cal-cell is-muted"></div>`;
+    for (let dia = 1; dia <= diasNoMes; dia++) {
+      const aulas = porDia[dia] || [];
+      const cell = `
+        <div class="cal-cell ${hj === dia ? "is-today" : ""}">
+          <div class="cal-num">${dia}</div>
+          ${aulas.slice(0, 3).map((a) => `
+            <div class="cal-aula cal-aula--${corStatus(a.status)}" data-aula="${a.id}" title="${Utils.escape(a.aluno)} — ${a.horario}">
+              ${Utils.escape(a.horario)} ${Utils.escape(a.aluno)}
+            </div>`).join("")}
+          ${aulas.length > 3 ? `<div class="cal-more">+${aulas.length - 3} mais</div>` : ""}
+        </div>`;
+      html += cell;
+    }
+    html += `</div>`;
+    return html;
+  }
+
+  function abrirAula(id) {
+    const a = id ? DB.aulas.find(id) : {};
+    const alunos = Utils.sort(DB.alunos.all(), "nome");
+    const profs = Utils.sort(DB.professores.all(), "nome");
+    const v = (k) => Utils.escape(a[k] ?? "");
+
+    UI.openModal({
+      title: id ? "Editar aula" : "Marcar aula",
+      body: `
+        <form id="aulaForm" class="form-grid">
+          <div class="field col-2"><label>Aluno *</label>
+            <select name="aluno"><option value="">Selecione...</option>${alunos.map((al) => `<option ${a.aluno === al.nome ? "selected" : ""}>${Utils.escape(al.nome)}</option>`).join("")}</select>
+            <span class="error" data-err="aluno"></span>
+          </div>
+          <div class="field"><label>Professor *</label>
+            <select name="professor"><option value="">Selecione...</option>${profs.map((p) => `<option ${a.professor === p.nome ? "selected" : ""}>${Utils.escape(p.nome)}</option>`).join("")}</select>
+            <span class="error" data-err="professor"></span>
+          </div>
+          <div class="field"><label>Data</label><input name="data" type="date" value="${v("data") || Utils.today()}" /></div>
+          <div class="field"><label>Horário</label>
+            <select name="horario">${HORARIOS.map((h) => `<option ${a.horario === h ? "selected" : ""}>${h}</option>`).join("")}</select>
+          </div>
+          <div class="field"><label>Status</label>
+            <select name="status">${STATUS_AULA.map((s) => `<option ${a.status === s ? "selected" : ""}>${s}</option>`).join("")}</select>
+          </div>
+          <div class="field col-2"><label>Observações</label><textarea name="obs">${v("obs")}</textarea></div>
+        </form>`,
+footer: `<button class="btn btn--ghost" data-close>Cancelar</button>
+               ${id ? `<button class="btn btn--danger" id="aulaDel" style="margin-right:auto"><i class="fa-solid fa-trash"></i>Excluir</button>` : ""}
+               <button class="btn btn--primary" id="aulaSave"><i class="fa-solid fa-floppy-disk"></i>Salvar</button>`,
+    });
+
+    const delBtn = UI.$("#aulaDel");
+    if (delBtn) delBtn.onclick = () => {
+      UI.confirm({
+        title: "Excluir aula",
+        message: `Excluir a aula de ${a.aluno || ""} em ${Utils.date(a.data)} às ${a.horario || ""}?`,
+        confirmText: "Excluir",
+        tone: "danger",
+        onConfirm: () => UI.withLoading(() => {
+          DB.aulas.remove(id);
+          UI.closeModal();
+          UI.toast("Aula excluída.", "info");
+          App.refresh();
+        }),
+      });
+    };
+
+    UI.$("#aulaSave").onclick = () => {
+      const d = Object.fromEntries(new FormData(UI.$("#aulaForm")).entries());
+      const errs = {};
+      if (!d.aluno) errs.aluno = "Selecione o aluno.";
+      if (!d.professor) errs.professor = "Selecione o professor.";
+      document.querySelectorAll("#aulaForm .error").forEach((e) => (e.textContent = errs[e.dataset.err] || ""));
+      if (Object.keys(errs).length) return;
+      UI.withLoading(() => {
+        id ? DB.aulas.update(id, d) : DB.aulas.insert(d);
+        UI.closeModal();
+        UI.toast(id ? "Aula atualizada!" : "Aula agendada!");
+        App.refresh();
+      });
+    };
   }
 
   function tabela(alunos, turmas, professores) {
@@ -66,7 +197,9 @@ const Aulas = (() => {
           <td>${Utils.money(a.mensalidade)}</td>
           <td><span class="badge badge--${a.pago ? "success" : "warn"}">${a.pago ? "Em dia" : "Pendente"}</span></td>
           <td><div class="row-actions">
-            <button class="icon-btn btn--sm" data-pagar="${a.id}" data-tip="Registrar mensalidade" style="width:32px;height:32px"><i class="fa-solid fa-hand-holding-dollar"></i></button>
+            ${a.pago
+              ? `<button class="icon-btn btn--sm" data-cancelarpagar="${a.id}" data-tip="Cancelar pagamento" style="width:32px;height:32px"><i class="fa-solid fa-xmark"></i></button>`
+              : `<button class="icon-btn btn--sm" data-pagar="${a.id}" data-tip="Registrar mensalidade" style="width:32px;height:32px"><i class="fa-solid fa-hand-holding-dollar"></i></button>`}
             <button class="icon-btn btn--sm" data-delaluno="${a.id}" style="width:32px;height:32px"><i class="fa-solid fa-trash"></i></button>
           </div></td>
         </tr>`).join("")
@@ -134,6 +267,17 @@ const Aulas = (() => {
     };
   }
 
+  function pagar(a) {
+    DB.alunos.update(a.id, { pago: true, ultimoPagamento: new Date().toISOString() });
+    DB.financeiro.insert({ tipo: "entrada", categoria: "Mensalidade", descricao: `Mensalidade — ${a.nome}`, valor: Number(a.mensalidade) || 0, data: new Date().toISOString(), origem: "aula", alunoId: a.id });
+  }
+
+  function cancelarPagamento(a) {
+    DB.financeiro.where((f) => f.origem === "aula" && f.alunoId === a.id)
+      .forEach((f) => DB.financeiro.remove(f.id));
+    DB.alunos.update(a.id, { pago: false, ultimoPagamento: null });
+  }
+
   function mount(root) {
     UI.$("#btnNovoAluno").onclick = formAluno;
     UI.$("#btnNovoProf").onclick = formProfessor;
@@ -143,27 +287,56 @@ const Aulas = (() => {
 
     root.addEventListener("input", (e) => {
       if (e.target.dataset.mask === "phone") e.target.value = Utils.maskPhone(e.target.value);
+      if (e.target.id === "agendaSearch") { state.term = e.target.value; App.refresh(true); }
+    });
+
+    root.addEventListener("change", (e) => {
+      if (e.target.id === "agendaProf") { state.prof = e.target.value; App.refresh(); }
     });
 
     root.addEventListener("click", (e) => {
       const tab = e.target.closest("[data-tab]");
       if (tab) { state.tab = tab.dataset.tab; return App.refresh(); }
-      const pagar = e.target.closest("[data-pagar]");
-      if (pagar) {
-        const a = DB.alunos.find(pagar.dataset.pagar);
+
+      const calnav = e.target.closest("[data-calnav]");
+      if (calnav) {
+        const d = new Date(state.cal.ano, state.cal.mes + Number(calnav.dataset.calnav), 1);
+        state.cal = { ano: d.getFullYear(), mes: d.getMonth() };
+        return App.refresh();
+      }
+      const btnAula = e.target.closest("#btnNovaAula");
+      if (btnAula) return abrirAula();
+      const aula = e.target.closest("[data-aula]");
+      if (aula) return abrirAula(aula.dataset.aula);
+
+      const pagarBtn = e.target.closest("[data-pagar]");
+      if (pagarBtn) {
+        const a = DB.alunos.find(pagarBtn.dataset.pagar);
         return UI.withLoading(() => {
-          DB.alunos.update(a.id, { pago: true, ultimoPagamento: new Date().toISOString() });
-          DB.financeiro.insert({ tipo: "entrada", categoria: "Mensalidade", descricao: `Mensalidade — ${a.nome}`, valor: Number(a.mensalidade) || 0, data: new Date().toISOString(), origem: "aula" });
+          pagar(a);
           UI.toast("Mensalidade registrada!");
           App.refresh();
         });
       }
+      const cancelar = e.target.closest("[data-cancelarpagar]");
+      if (cancelar) {
+        const a = DB.alunos.find(cancelar.dataset.cancelarpagar);
+return UI.confirm({
+          message: `Cancelar o pagamento da mensalidade de ${a.nome}? O lançamento no Financeiro será removido e o status voltará para pendente.`,
+          tone: "danger",
+          onConfirm: () => UI.withLoading(() => {
+            cancelarPagamento(a);
+            UI.toast("Pagamento cancelado.", "info");
+            App.refresh();
+          }),
+        });
+      }
       const da = e.target.closest("[data-delaluno]");
-      if (da) return UI.confirm({ message: "Excluir este aluno?", onConfirm: () => UI.withLoading(() => { DB.alunos.remove(da.dataset.delaluno); UI.toast("Aluno excluído.", "info"); App.refresh(); }) });
+      if (da) return UI.confirm({ message: "Excluir este aluno?", tone: "danger", onConfirm: () => UI.withLoading(() => { DB.alunos.remove(da.dataset.delaluno); UI.toast("Aluno excluído.", "info"); App.refresh(); }) });
       const dp = e.target.closest("[data-delprof]");
-      if (dp) return UI.confirm({ message: "Excluir este professor?", onConfirm: () => UI.withLoading(() => { DB.professores.remove(dp.dataset.delprof); UI.toast("Professor excluído.", "info"); App.refresh(); }) });
+      if (dp) return UI.confirm({ message: "Excluir este professor?", tone: "danger", onConfirm: () => UI.withLoading(() => { DB.professores.remove(dp.dataset.delprof); UI.toast("Professor excluído.", "info"); App.refresh(); }) });
       const dt = e.target.closest("[data-delturma]");
-      if (dt) return UI.confirm({ message: "Excluir esta turma?", onConfirm: () => UI.withLoading(() => { DB.turmas.remove(dt.dataset.delturma); UI.toast("Turma excluída.", "info"); App.refresh(); }) });
+      if (dt) return UI.confirm({ message: "Excluir esta turma?", tone: "danger", onConfirm: () => UI.withLoading(() => { DB.turmas.remove(dt.dataset.delturma); UI.toast("Turma excluída.", "info"); App.refresh(); }) });
     });
   }
 

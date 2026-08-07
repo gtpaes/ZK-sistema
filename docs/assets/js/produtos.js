@@ -196,8 +196,9 @@ const Produtos = (() => {
       const del = e.target.closest("[data-del]");
       if (del) {
         const p = DB.produtos.find(del.dataset.del);
-        return UI.confirm({
+return UI.confirm({
           message: `Excluir o produto “${p.nome}”? Esta ação não pode ser desfeita.`,
+          tone: "danger",
           onConfirm: () =>
             UI.withLoading(() => {
               DB.produtos.remove(p.id);
@@ -414,8 +415,9 @@ const Estoque = (() => {
 
       const produto = DB.produtos.find(mov.produtoId);
 
-      UI.confirm({
+UI.confirm({
         message: "Excluir esta movimentação do estoque?",
+        tone: "danger",
 
         onConfirm: () => UI.withLoading(() => {
 

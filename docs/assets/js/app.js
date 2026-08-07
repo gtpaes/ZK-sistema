@@ -8,7 +8,10 @@ const App = (() => {
     estoque: { title: "Estoque", subtitle: "Entradas, saídas e alertas", module: () => Estoque },
     vendas: { title: "Vendas", subtitle: "PDV, carrinho e recibos", module: () => Vendas },
     consertos: { title: "Consertos", subtitle: "Ordens de serviço de pranchas", module: () => Consertos },
+    confeccao: { title: "Confecção", subtitle: "Pranchas sob encomenda", module: () => Confeccao },
     aulas: { title: "Aulas", subtitle: "Professores, turmas e mensalidades", module: () => Aulas },
+    guarderia: { title: "Guarderia", subtitle: "Contratos de guarda de pranchas", module: () => Guarderia },
+
     financeiro: { title: "Financeiro", subtitle: "Fluxo de caixa e despesas", module: () => Financeiro },
     relatorios: { title: "Relatórios", subtitle: "Análises a partir dos dados locais", module: () => Relatorios },
     config: { title: "Configurações", subtitle: "Empresa, tema e banco de dados local", module: () => Config },

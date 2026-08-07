@@ -223,8 +223,9 @@ const Clientes = (() => {
       const del = e.target.closest("[data-del]");
       if (del) {
         const c = DB.clientes.find(del.dataset.del);
-        return UI.confirm({
+return UI.confirm({
           message: `Deseja realmente excluir o cliente “${c.nome}”? Esta ação não pode ser desfeita.`,
+          tone: "danger",
           onConfirm: () =>
             UI.withLoading(() => {
               DB.clientes.remove(c.id);

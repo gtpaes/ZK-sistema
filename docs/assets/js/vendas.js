@@ -74,14 +74,78 @@ const Vendas = (() => {
         }
       });
       const saved = DB.vendas.insert(venda);
-      DB.financeiro.insert({ tipo: "entrada", categoria: "Venda", descricao: `${venda.numero} — ${venda.cliente}`, valor: venda.total, data: venda.data, origem: "venda" });
+      DB.financeiro.insert({ tipo: "entrada", categoria: "Venda", descricao: `${venda.numero} — ${venda.cliente}`, valor: venda.total, data: venda.data, origem: "venda", vendaId: saved.id });
+
       limpar();
       UI.toast("Venda finalizada com sucesso!");
       recibo(saved.id);
     });
   }
 
+  /* ---------- Estorno / cancelamento ---------- */
+  /**
+   * Reverte integralmente uma venda: devolve o estoque, registra as movimentações
+   * de entrada e remove os lançamentos financeiros gerados por ela.
+   * Idempotente: uma venda já cancelada não é estornada novamente.
+   */
+  function estornar(venda) {
+    if (!venda || venda.cancelada) return false;
+
+    (venda.itens || []).forEach((i) => {
+      const p = DB.produtos.find(i.produtoId);
+      if (!p) return;
+      DB.produtos.update(p.id, { quantidade: (Number(p.quantidade) || 0) + (Number(i.qtd) || 0) });
+      DB.movimentacoes.insert({
+        produtoId: p.id, produto: p.nome, tipo: "entrada", quantidade: Number(i.qtd) || 0,
+        motivo: `Estorno da venda ${venda.numero}`, data: new Date().toISOString(),
+      });
+    });
+
+    // Remove o lançamento financeiro vinculado (por id ou, em vendas antigas, pela descrição)
+    DB.financeiro
+      .where((f) => f.origem === "venda" && (f.vendaId === venda.id || (!f.vendaId && f.descricao === `${venda.numero} — ${venda.cliente}`)))
+      .forEach((f) => DB.financeiro.remove(f.id));
+
+    return true;
+  }
+
+  function cancelar(id) {
+    const v = DB.vendas.find(id);
+    if (!v) return;
+    if (v.cancelada) return UI.toast("Esta venda já está cancelada.", "warn");
+UI.confirm({
+      title: "Cancelar venda",
+      confirmText: "Cancelar venda",
+      tone: "danger",
+      message: "O estoque dos produtos será devolvido e a entrada financeira desta venda será removida. Confirmar?",
+      onConfirm: () => UI.withLoading(() => {
+        estornar(v);
+        DB.vendas.update(v.id, { cancelada: true, canceladaEm: new Date().toISOString() });
+        UI.toast("Venda cancelada e estornada.", "info");
+        App.refresh();
+      }),
+    });
+  }
+
+  function excluir(id) {
+    const v = DB.vendas.find(id);
+    if (!v) return;
+UI.confirm({
+      message: v.cancelada
+        ? "Excluir definitivamente esta venda já cancelada do histórico?"
+        : "Excluir esta venda? O estoque será devolvido e a entrada financeira removida automaticamente.",
+      tone: "danger",
+      onConfirm: () => UI.withLoading(() => {
+        estornar(v);
+        DB.vendas.remove(v.id);
+        UI.toast("Venda excluída e revertida.", "info");
+        App.refresh();
+      }),
+    });
+  }
+
   /* ---------- Recibo ---------- */
+
   function reciboHTML(v) {
     const s = DB.settings.get();
     return `
@@ -142,15 +206,17 @@ const Vendas = (() => {
     const clientes = Utils.sort(DB.clientes.all(), "nome");
     const historico = Utils.sort(DB.vendas.all(), "data", "desc");
     const pageList = Utils.paginate(historico, state.page, state.perPage);
-    const hoje = historico.filter((v) => Utils.isSameDay(v.data));
+    const hoje = historico.filter((v) => Utils.isSameDay(v.data) && !v.cancelada);
+    const canceladas = historico.filter((v) => v.cancelada).length;
 
     return `
       <div class="page-actions">
         <div class="stat-strip" style="flex:1;margin:0">
           <div class="mini-stat"><i class="fa-solid fa-cart-shopping"></i><div><strong>${hoje.length}</strong><small>Vendas hoje</small></div></div>
           <div class="mini-stat"><i class="fa-solid fa-money-bill-wave"></i><div><strong>${Utils.money(hoje.reduce((s, v) => s + (v.total || 0), 0))}</strong><small>Faturamento do dia</small></div></div>
-          <div class="mini-stat"><i class="fa-solid fa-receipt"></i><div><strong>${historico.length}</strong><small>Vendas registradas</small></div></div>
+          <div class="mini-stat"><i class="fa-solid fa-ban"></i><div><strong>${canceladas}</strong><small>Vendas canceladas</small></div></div>
         </div>
+
         <button class="btn btn--ghost" id="vdLimpar"><i class="fa-solid fa-eraser"></i>Limpar carrinho</button>
       </div>
 
@@ -159,7 +225,7 @@ const Vendas = (() => {
           <div class="card__head"><div><h3>Produtos disponíveis</h3><p>Clique para adicionar ao carrinho</p></div></div>
           <div class="card__body">
             <div class="search" style="margin-bottom:12px"><i class="fa-solid fa-magnifying-glass"></i>
-              <input id="vdSearch" style="border-radius: 5px;" type="search" placeholder="Buscar produto..." value="${Utils.escape(state.term)}" />
+              <input id="vdSearch" type="search" placeholder="Buscar produto..." value="${Utils.escape(state.term)}" />
             </div>
             <div class="pdv-grid">
               ${produtos.length
@@ -240,18 +306,20 @@ const Vendas = (() => {
             <tbody>
               ${pageList.length
                 ? pageList.map((v) => `
-                  <tr>
-                    <td><strong>${Utils.escape(v.numero || "—")}</strong></td>
+                  <tr${v.cancelada ? ` class="is-cancelled"` : ""}>
+                    <td><strong>${Utils.escape(v.numero || "—")}</strong>${v.cancelada ? `<br><span class="badge badge--danger">Cancelada</span>` : ""}</td>
                     <td>${Utils.escape(v.cliente || "Consumidor final")}</td>
                     <td><span class="badge">${Utils.escape(v.pagamento || "—")}</span></td>
                     <td><strong>${Utils.money(v.total)}</strong></td>
                     <td>${Utils.date(v.data)}</td>
                     <td><div class="row-actions">
                       <button class="icon-btn btn--sm" data-rec="${v.id}" data-tip="Recibo" style="width:32px;height:32px"><i class="fa-solid fa-receipt"></i></button>
+                      <button class="icon-btn btn--sm" data-cancelv="${v.id}" data-tip="Cancelar venda" style="width:32px;height:32px" ${v.cancelada ? "disabled" : ""}><i class="fa-solid fa-rotate-left"></i></button>
                       <button class="icon-btn btn--sm" data-delv="${v.id}" data-tip="Excluir" style="width:32px;height:32px"><i class="fa-solid fa-trash"></i></button>
                     </div></td>
                   </tr>`).join("")
                 : `<tr><td colspan="6">${UI.empty("fa-receipt", "Nenhuma venda registrada", "Finalize uma venda para ver o histórico.")}</td></tr>`}
+
             </tbody>
           </table>
         </div>
@@ -287,13 +355,11 @@ const Vendas = (() => {
       if (rm) return removeItem(rm.dataset.rm);
       const rec = e.target.closest("[data-rec]");
       if (rec) return recibo(rec.dataset.rec);
+      const canc = e.target.closest("[data-cancelv]");
+      if (canc && !canc.disabled) return cancelar(canc.dataset.cancelv);
       const del = e.target.closest("[data-delv]");
-      if (del) {
-        return UI.confirm({
-          message: "Excluir esta venda do histórico? O estoque não será devolvido automaticamente.",
-          onConfirm: () => UI.withLoading(() => { DB.vendas.remove(del.dataset.delv); UI.toast("Venda excluída.", "info"); App.refresh(); }),
-        });
-      }
+      if (del) return excluir(del.dataset.delv);
+
       const nav = e.target.closest("[data-page-nav]");
       if (nav && !nav.disabled) { state.page = Number(nav.dataset.pageNav); App.refresh(); }
     });

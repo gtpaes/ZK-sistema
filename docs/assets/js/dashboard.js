@@ -21,6 +21,13 @@ const Dashboard = (() => {
       fin.filter((f) => f.tipo === "entrada" && Utils.isSameMonth(f.data)).reduce((s, f) => s + f.valor, 0) -
       fin.filter((f) => f.tipo === "saida" && Utils.isSameMonth(f.data)).reduce((s, f) => s + f.valor, 0);
 
+const confeccoes = DB.confeccoes.all();
+    const confeccoesHist = DB.confeccoesHistorico.all();
+    const guarderiaHist = DB.guarderiaHistorico.all();
+
+    const confeccoesAtivas = confeccoes.filter((c) => c.status !== "Entregue");
+    const guarderiaAtivos = DB.guarderias.all().filter((g) => !g.encerrado);
+
     return {
       clientes: DB.clientes.count(),
       produtos: produtos.length,
@@ -35,6 +42,23 @@ const Dashboard = (() => {
       aulas: DB.turmas.count(),
       lucroDia,
       lucroMes,
+
+      // Confecção
+      confeccoesAndamento: confeccoesAtivas.length,
+      confeccoesAtrasadas: confeccoesAtivas.filter(
+        (c) => c.status !== "Pronta" && Utils.daysUntil(c.prazo) < 0
+      ).length,
+      confeccoesProntas: confeccoes.filter((c) => c.status === "Pronta").length,
+      confeccoesFaturado: confeccoesHist.reduce((s, c) => s + (Number(c.valor) || 0), 0),
+
+      // Guarderia
+      guarderiaAtivos: guarderiaAtivos.length,
+      guarderiaVencidos: guarderiaAtivos.filter(
+        (g) => !g.pago && Utils.daysUntil(g.vencimento) < 0
+      ).length,
+      guarderiaReceita: guarderiaAtivos.reduce((s, g) => s + (Number(g.valor) || 0), 0),
+      guarderiaPagos: guarderiaHist.length,
+      guarderiaRecebido: guarderiaHist.reduce((s, g) => s + (Number(g.valor) || 0), 0),
     };
   }
 
@@ -111,6 +135,83 @@ const Dashboard = (() => {
       </div>`;
   }
 
+  /** Donut simulado: confecções por status */
+  function chartConfeccoes() {
+    const confeccoes = DB.confeccoes.all();
+    const grupos = [
+      { label: "Em produção", cor: "#0e6ba8", n: confeccoes.filter((c) => c.status !== "Entregue" && c.status !== "Pronta").length },
+      { label: "Prontas", cor: "#14b8a6", n: confeccoes.filter((c) => c.status === "Pronta").length },
+      { label: "Entregues", cor: "#17a06b", n: confeccoes.filter((c) => c.status === "Entregue").length },
+    ];
+    const total = grupos.reduce((s, g) => s + g.n, 0);
+    let acc = 0;
+    const stops = total
+      ? grupos
+          .map((g) => {
+            const start = (acc / total) * 100;
+            acc += g.n;
+            return `${g.cor} ${start}% ${(acc / total) * 100}%`;
+          })
+          .join(",")
+      : "var(--border) 0% 100%";
+
+    return `
+      <div class="donut-wrap">
+        <div class="donut" style="background:conic-gradient(${stops})">
+          <div class="donut__center"><div><strong>${total}</strong><span>confecções</span></div></div>
+        </div>
+        <div class="legend">
+          ${grupos
+            .map(
+              (g) => `<div><span class="dot" style="background:${g.cor}"></span>${g.label}<span class="val">${g.n}</span></div>`
+            )
+            .join("")}
+        </div>
+      </div>`;
+  }
+
+  /** Lista de confecções com prazo mais próximo */
+  function prazosConfeccoes() {
+    const lista = DB.confeccoes
+      .where((c) => c.status !== "Entregue" && c.prazo)
+      .sort((a, b) => new Date(a.prazo) - new Date(b.prazo))
+      .slice(0, 5);
+    if (!lista.length) return UI.empty("fa-hammer", "Nenhuma confecção ativa", "As encomendas aparecerão aqui.");
+    return `<div class="mini-list">
+      ${lista
+        .map((c) => {
+          const d = Utils.daysUntil(c.prazo);
+          const badge = d < 0
+            ? `<span class="badge badge--danger">Atrasada ${Math.abs(d)}d</span>`
+            : d === 0
+            ? `<span class="badge badge--warn">Vence hoje</span>`
+            : `<span class="badge badge--info">Em ${d}d</span>`;
+          return `<div class="mini-list__item">
+            <div class="ico"><i class="fa-solid fa-hammer"></i></div>
+            <div><strong>${Utils.escape(c.cliente || "Cliente")}</strong><small>${c.numero} · ${Utils.escape(c.modelo || "—")}</small></div>
+            <div class="right">${badge}</div>
+          </div>`;
+        })
+        .join("")}
+    </div>`;
+  }
+
+  /** Lista de pagamentos mais recentes da guarderia */
+  function pagamentosGuarderia() {
+    const lista = Utils.sort(DB.guarderiaHistorico.all(), "dataPagamento", "desc").slice(0, 5);
+    if (!lista.length) return UI.empty("fa-warehouse", "Sem pagamentos", "Os pagamentos da guarderia aparecerão aqui.");
+    return `<div class="mini-list">
+      ${lista
+        .map((g) => `
+          <div class="mini-list__item">
+            <div class="ico"><i class="fa-solid fa-warehouse"></i></div>
+            <div><strong>${Utils.escape(g.cliente || "Cliente")}</strong><small>${Utils.escape(g.referencia || "—")} · ${Utils.escape(g.plano || "—")}</small></div>
+            <div class="right"><strong style="color:var(--success)">${Utils.money(g.valor)}</strong></div>
+          </div>`)
+        .join("")}
+    </div>`;
+  }
+
   function topProdutos() {
     const produtos = Utils.sort(DB.produtos.all(), "quantidade", "asc").slice(0, 5);
     if (!produtos.length) return UI.empty("fa-box-open", "Sem produtos", "Cadastre produtos para acompanhar o estoque.");
@@ -163,9 +264,17 @@ const Dashboard = (() => {
         ${kpi("", "fa-screwdriver-wrench", "Consertos em andamento", m.andamento, "Oficina")}
         ${kpi("kpi--danger", "fa-clock", "Consertos atrasados", m.atrasados, "Prazo vencido")}
         ${kpi("kpi--accent", "fa-circle-check", "Consertos prontos", m.prontos, "Aguardando retirada")}
-        ${kpi("", "fa-person-swimming", "Próximas aulas", m.aulas, "Turmas programadas")}
+${kpi("", "fa-person-swimming", "Próximas aulas", m.aulas, "Turmas programadas")}
         ${kpi("kpi--success", "fa-sack-dollar", "Lucro do dia", Utils.money(m.lucroDia), "Entradas − saídas")}
         ${kpi("kpi--success", "fa-chart-line", "Lucro do mês", Utils.money(m.lucroMes), "Acumulado mensal")}
+        ${kpi("kpi--accent", "fa-hammer", "Confecções em andamento", m.confeccoesAndamento, "Produções ativas")}
+        ${kpi("kpi--danger", "fa-hourglass-end", "Confecções atrasadas", m.confeccoesAtrasadas, "Prazo vencido")}
+        ${kpi("kpi--success", "fa-circle-check", "Confecções prontas", m.confeccoesProntas, "Aguardando entrega")}
+        ${kpi("kpi--success", "fa-sack-dollar", "Faturado (confecção)", Utils.money(m.confeccoesFaturado), "Confecções entregues")}
+        ${kpi("kpi--accent", "fa-warehouse", "Períodos ativos", m.guarderiaAtivos, "Contratos de guarderia")}
+        ${kpi("kpi--danger", "fa-clock", "Guarderias vencidas", m.guarderiaVencidos, "Mensalidades em atraso")}
+        ${kpi("kpi--warn", "fa-hand-holding-dollar", "Receita contratada", Utils.money(m.guarderiaReceita), "Mensalidades a receber")}
+        ${kpi("kpi--success", "fa-circle-dollar-to-slot", "Receita recebida", Utils.money(m.guarderiaRecebido), "Pagamentos de guarderia")}
       </section>
 
       <section class="grid-2">
@@ -181,12 +290,30 @@ const Dashboard = (() => {
 
       <section class="grid-2">
         <div class="card">
+          <div class="card__head"><div><h3>Confecção por status</h3><p>Distribuição das encomendas</p></div></div>
+          <div class="card__body">${chartConfeccoes()}</div>
+        </div>
+        <div class="card">
+          <div class="card__head"><div><h3>Pagamentos recebidos — Guarderia</h3><p>Períodos pagos mais recentes</p></div></div>
+          <div class="card__body">${pagamentosGuarderia()}</div>
+        </div>
+      </section>
+
+      <section class="grid-2">
+        <div class="card">
           <div class="card__head"><div><h3>Prazos de entrega</h3><p>Ordens mais próximas do vencimento</p></div></div>
           <div class="card__body">${proximosPrazos()}</div>
         </div>
         <div class="card">
           <div class="card__head"><div><h3>Menores estoques</h3><p>Prioridade de reposição</p></div></div>
           <div class="card__body">${topProdutos()}</div>
+        </div>
+      </section>
+
+      <section class="grid-2">
+        <div class="card">
+          <div class="card__head"><div><h3>Prazos de confecção</h3><p>Encomendas mais próximas do vencimento</p></div></div>
+          <div class="card__body">${prazosConfeccoes()}</div>
         </div>
       </section>`;
   }

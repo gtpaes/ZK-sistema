@@ -41,14 +41,17 @@ const UI = (() => {
   }
 
   /* ---------- Confirmação ---------- */
-  function confirm({ title = "Confirmar ação", message, confirmText = "Excluir", onConfirm }) {
+  function confirm({ title = "Confirmar ação", message, confirmText = "Confirmar", onConfirm, tone = "confirm" }) {
+    const destructive = tone === "danger";
+    const btnClass = destructive ? "btn--danger" : "btn--success";
+    const icon = destructive ? "" : '<i class="fa-solid fa-check"></i>';
     openModal({
       title,
       size: 460,
       body: `<p style="font-size:14px;line-height:1.6;color:var(--text-muted)">${Utils.escape(message)}</p>`,
       footer: `
         <button class="btn btn--ghost" data-close>Cancelar</button>
-        <button class="btn btn--danger" id="confirmYes"><i class="fa-solid fa-trash"></i>${confirmText}</button>`,
+        <button class="btn ${btnClass}" id="confirmYes">${icon}${confirmText}</button>`,
     });
     $("#confirmYes").onclick = () => {
       closeModal();

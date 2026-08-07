@@ -64,18 +64,7 @@ const Financeiro = (() => {
         <div class="field"><label>Tipo</label><select name="tipo"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div>
         <div class="field"><label>Categoria</label><select name="categoria">${CATEGORIAS.map((c) => `<option>${c}</option>`).join("")}</select></div>
         <div class="field"><label>Valor *</label><input name="valor" type="number" min="0" step="0.01" /><span class="error" data-err="valor"></span></div>
-        <div class="field"><label>Data</label><input
-    name="data"
-    type="date"
-    value="${Utils.today()}"
-    style="
-        background:#1f2937;
-        color:white;
-        border:1px solid #374151;
-        border-radius:10px;
-        padding:10px;
-    "
-/></div>
+        <div class="field"><label>Data</label><input name="data" type="date" value="${Utils.today()}" /></div>
       </form>`,
       footer: `<button class="btn btn--ghost" data-close>Cancelar</button><button class="btn btn--primary" id="finSave"><i class="fa-solid fa-floppy-disk"></i>Salvar</button>`,
     });
@@ -98,7 +87,7 @@ const Financeiro = (() => {
     UI.$("#finTipo").onchange = (e) => { state.tipo = e.target.value; state.page = 1; App.refresh(); };
     root.addEventListener("click", (e) => {
       const del = e.target.closest("[data-del]");
-      if (del) return UI.confirm({ message: "Excluir este lançamento?", onConfirm: () => UI.withLoading(() => { DB.financeiro.remove(del.dataset.del); UI.toast("Lançamento excluído.", "info"); App.refresh(); }) });
+      if (del) return UI.confirm({ message: "Excluir este lançamento?", tone: "danger", onConfirm: () => UI.withLoading(() => { DB.financeiro.remove(del.dataset.del); UI.toast("Lançamento excluído.", "info"); App.refresh(); }) });
       const nav = e.target.closest("[data-page-nav]");
       if (nav && !nav.disabled) { state.page = Number(nav.dataset.pageNav); App.refresh(); }
     });

@@ -59,12 +59,31 @@ const Utils = {
 
   /** Busca textual em múltiplos campos */
   search: (list, term, fields) => {
-    const q = term.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((item) =>
-      fields.some((f) => String(item[f] ?? "").toLowerCase().includes(q))
-    );
-  },
+
+  const normalize = (text = "") =>
+    String(text)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+
+  const words = normalize(term)
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!words.length) return list;
+
+  return list.filter(item => {
+
+    const texto = fields
+      .map(f => normalize(item[f]))
+      .join(" ");
+
+    return words.every(word => texto.includes(word));
+
+  });
+
+},
 
   /** Ordenação genérica (string, número ou data) */
   sort: (list, key, dir = "asc") => {

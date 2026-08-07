@@ -450,6 +450,13 @@ button {
   background: var(--danger);
   color: #fff;
 }
+.btn--success {
+  background: var(--success);
+  color: #fff;
+}
+.btn--success:hover {
+  filter: brightness(1.08);
+}
 .btn--sm {
   padding: 7px 11px;
   font-size: 12.5px;

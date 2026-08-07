@@ -1,4 +1,4 @@
-/* modules.css — componentes dos módulos Produtos, Estoque, Vendas, Aulas e Relatórios */
+ /* modules.css — componentes dos módulos Produtos, Estoque, Vendas, Aulas e Relatórios */
 
 /* ---------- Listas ---------- */
 .list {
@@ -298,5 +298,282 @@
   }
   .cart {
     position: static;
+  }
+}
+
+/* ===== Quadrantes da prancha (OS / Confecção) ===== */
+.board-map {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  background: var(--surface-2);
+}
+.board-shape {
+  position: relative;
+  width: 110px;
+  height: 240px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 55px 55px 40px 40px / 90px 90px 45px 45px;
+}
+.board-line {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  bottom: 8%;
+  width: 1px;
+  background: var(--border);
+}
+.board-dot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: var(--transition);
+}
+.board-dot:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.board-dot.is-on {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.board-map.is-readonly .board-dot {
+  cursor: default;
+}
+.board-legend {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.board-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.board-legend li::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.board-legend li.is-on {
+  color: var(--text);
+  font-weight: 600;
+}
+.board-legend li.is-on::before {
+  background: var(--danger);
+}
+
+/* ===== Upload de fotos ===== */
+.photo-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: var(--surface-2);
+}
+.photo-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+.photo-add:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.photo-thumb {
+  position: relative;
+  width: 96px;
+  height: 74px;
+  margin: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.photo-rm {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 10px;
+  cursor: pointer;
+}
+.photo-empty {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* ===== Venda cancelada ===== */
+.table tr.is-cancelled td {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+.table tr.is-cancelled .row-actions,
+.table tr.is-cancelled .badge {
+  text-decoration: none;
+}
+
+/* ===== Checkbox inline ===== */
+.field .check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.field .check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+
+/* ===== Calendário (Agenda de Aulas) ===== */
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.cal-head strong {
+  font-size: 15px;
+  min-width: 160px;
+  text-align: center;
+  text-transform: capitalize;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  padding: 14px 20px;
+}
+.cal-cell {
+  min-height: 84px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+.cal-cell--head {
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 2px;
+}
+.cal-cell.is-muted {
+  background: transparent;
+  border-color: transparent;
+}
+.cal-cell.is-today {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-soft);
+}
+.cal-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.cal-cell.is-today .cal-num {
+  color: var(--primary);
+}
+.cal-aula {
+  font-size: 10.5px;
+  line-height: 1.2;
+  padding: 3px 5px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid transparent;
+}
+.cal-aula--success {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: var(--success);
+}
+.cal-aula--danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.cal-aula--info {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.cal-aula:hover {
+  filter: brightness(0.96);
+}
+.cal-more {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .cal-grid {
+    grid-template-columns: repeat(7, minmax(44px, 1fr));
+    gap: 4px;
+    padding: 10px;
+  }
+  .cal-cell {
+    min-height: 64px;
+  }
+  .cal-cell--head {
+    font-size: 9px;
   }
 }

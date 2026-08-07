@@ -65,9 +65,11 @@ const DB = (() => {
     },
   };
 
-  const COLLECTIONS = [
+const COLLECTIONS = [
     "clientes", "produtos", "movimentacoes", "vendas",
-    "consertos", "professores", "alunos", "turmas", "financeiro",
+    "consertos", "consertosHistorico", "professores", "alunos", "turmas",
+    "aulas", "financeiro",
+    "confeccoes", "confeccoesHistorico", "guarderias", "guarderiaHistorico",
   ];
 
   return {
@@ -78,10 +80,17 @@ const DB = (() => {
     movimentacoes: collection("movimentacoes"),
     vendas: collection("vendas"),
     consertos: collection("consertos"),
+    consertosHistorico: collection("consertosHistorico"),
     professores: collection("professores"),
     alunos: collection("alunos"),
     turmas: collection("turmas"),
+    aulas: collection("aulas"),
     financeiro: collection("financeiro"),
+confeccoes: collection("confeccoes"),
+    confeccoesHistorico: collection("confeccoesHistorico"),
+    guarderias: collection("guarderias"),
+    guarderiaHistorico: collection("guarderiaHistorico"),
+
 
     exportAll() {
       const dump = { exportadoEm: new Date().toISOString(), settings: settings.get() };
