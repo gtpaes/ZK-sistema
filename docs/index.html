@@ -101,7 +101,12 @@
     <div class="toasts" id="toasts"></div>
     <div class="loader" id="loader"><span class="spinner"></span></div>
 
-        <script src="assets/js/api.js"></script>
+        <script>
+  window.API_URL = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+    ? "http://localhost:5000/api"
+    : "https://zk-surfhouse-api.onrender.com/api";
+</script>
+<script src="assets/js/api.js"></script>
     <script src="assets/js/storage.js"></script>
     <script src="assets/js/utils.js"></script>
     <script src="assets/js/ui.js"></script>
