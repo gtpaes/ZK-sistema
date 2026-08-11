@@ -92,10 +92,9 @@ const App = (() => {
     document.title = `${s.empresa} — Painel Administrativo`;
   }
 
-  /* ---------- Dados de demonstração (apenas no 1º acesso) ---------- */
+    /* ---------- Dados de demonstração (apenas no 1º acesso / se o banco está vazio) ---------- */
   function seed() {
-    if (localStorage.getItem("zk_surfhouse:seeded")) return;
-    localStorage.setItem("zk_surfhouse:seeded", "1");
+    if (DB.clientes.count() > 0) return; // já tem dados no backend
 
     [
       { nome: "Ana Beatriz Souza", cpf: "529.982.247-25", telefone: "(11) 98877-1234", whatsapp: "(11) 98877-1234", email: "ana.souza@email.com", endereco: "Av. Beira Mar, 320 — Maresias", observacoes: "Prefere pranchas 6'2\" fish." },
@@ -127,9 +126,16 @@ const App = (() => {
     ].forEach((c) => DB.consertos.insert(c));
   }
 
-  /* ---------- Inicialização ---------- */
-  function init() {
-    seed();
+    /* ---------- Inicialização ---------- */
+  async function init() {
+    UI.loading(true);
+    try {
+      await DB.init(); // carrega o cache do backend (MongoDB Atlas)
+      seed();          // dados de demonstração se o banco estiver vazio
+    } catch (e) {
+      console.warn("[App] falha ao carregar dados do backend:", e.message);
+      UI.toast("Não foi possível conectar ao backend. Mostrando dados locais.", "warn");
+    }
     applySettings();
     applyTheme(DB.settings.get().tema || "light");
 
@@ -151,6 +157,7 @@ const App = (() => {
       }, 300)
     );
 
+    UI.loading(false);
     render();
   }
 
@@ -219,34 +226,41 @@ const Config = (() => {
     };
 
     UI.$("#cfgImport").onclick = () => UI.$("#cfgFile").click();
-    UI.$("#cfgFile").onchange = (e) => {
+        UI.$("#cfgFile").onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          DB.importAll(JSON.parse(reader.result));
-          App.applySettings();
-          UI.toast("Dados importados com sucesso!");
-          App.refresh();
-        } catch {
-          UI.toast("Não foi possível ler o arquivo.", "error");
-        }
-      };
-      reader.readAsText(file);
+      UI.loading(true);
+      try {
+        const dump = JSON.parse(await file.text());
+        const res = await DB.importAll(dump);
+        App.applySettings();
+        UI.toast(res.message || "Dados importados com sucesso!");
+        App.refresh();
+      } catch (err) {
+        console.error(err);
+        UI.toast(err.message || "Não foi possível importar os dados.", "error");
+      } finally {
+        UI.loading(false);
+        e.target.value = "";
+      }
     };
 
-    UI.$("#cfgClear").onclick = () =>
+        UI.$("#cfgClear").onclick = () =>
       UI.confirm({
         title: "Limpar banco de dados",
-        message: "Todos os registros locais serão apagados permanentemente. Deseja continuar?",
+        message: "Todos os registros serão apagados permanentemente do servidor. Deseja continuar?",
         confirmText: "Limpar tudo",
-        onConfirm: () =>
-          UI.withLoading(() => {
-            DB.clearAll();
+        tone: "danger",
+        onConfirm: async () => {
+          UI.loading(true);
+          try {
+            await DB.clearAll();
             UI.toast("Banco de dados limpo.", "info");
             App.refresh();
-          }),
+          } finally {
+            UI.loading(false);
+          }
+        },
       });
   }
 

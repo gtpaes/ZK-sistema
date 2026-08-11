@@ -263,108 +263,19 @@ function painelHistorico() {
     });
   }
 
-  /** Pagar o período ativo: lança no Financeiro, arquiva como pago e cria o próximo */
-  function pagar(g) {
-    // 1) Movimenta para o histórico como Pago
-    const { id, ...dados } = g;
-    const pagoReg = {
-      ...dados,
-      guarderiaId: g.id,
-      assinaturaId: g.assinaturaId,
-      referencia: g.referencia,
-      plano: g.plano,
-      valor: g.valor,
-      dataPagamento: new Date().toISOString(),
-      status: "Pago",
-    };
-    DB.guarderiaHistorico.insert(pagoReg);
-
-    // 2) Lança no Financeiro vinculado ao período atual
-    lancar(g, `Guarderia ${g.plano}`);
-
-    // 3) Remove o período ativo (já pago)
-    DB.guarderias.remove(g.id);
-
-    // 4) Cria o próximo período pendente (independente, novo id)
-    criarProximoPeriodo(g, null);
+    /** Pagar: delega ao backend (transação MongoDB: histórico, financeiro, próximo período) */
+  async function pagar(g) {
+    await DB.guarderias.pagar(g.id);
   }
 
 /** Estorna um pagamento a partir do registro do histórico */
-  function estornarPorHistorico(hist) {
-    const assinaturaId = hist.assinaturaId;
-
-    // 1) Remove o período pendente que existir para a assinatura (auto-gerado)
-    const pendente = ativoDaAssinatura(assinaturaId);
-    if (pendente) DB.guarderias.remove(pendente.id);
-
-    // 2) Remove lançamento financeiro do período pago (somente o dele)
-    removerFinanceiro({ id: hist.guarderiaId, assinaturaId });
-
-    // 3) Remove registro do histórico
-    DB.guarderiaHistorico.remove(hist.id);
-
-    // 4) Reinstala o período pago de volta como ativo/pendente
-    DB.guarderias.insert({
-      assinaturaId,
-      cliente: hist.cliente,
-      prancha: hist.prancha,
-      vaga: hist.vaga,
-      tipo: hist.tipo,
-      plano: hist.plano,
-      inicio: hist.inicio,
-      vencimento: hist.vencimento,
-      referencia: hist.referencia,
-      valor: hist.valor,
-      obs: hist.obs,
-      encerrado: false,
-      pago: false,
-      dataPagamento: null,
-    });
-
-    UI.toast("Pagamento cancelado e período restaurado como pendente.", "info");
+    async function estornarPorHistorico(hist) {
+    await DB.guarderias.estornar(hist.guarderiaId);
   }
 
   /** Estorna o pagamento do período pago mais recente da assinatura */
-  function estornar(g) {
-    const hist = DB.guarderiaHistorico.where((h) => h.assinaturaId === g.assinaturaId)
-      .sort((a, b) => new Date(b.dataPagamento) - new Date(a.dataPagamento));
-
-    if (!hist.length) {
-      UI.toast("Nenhum pagamento registrado para estornar.", "info");
-      return;
-    }
-
-    const pago = hist[0];
-
-    // 1) Remove o período pendente que foi auto-gerado após o pagamento
-    const pendente = ativoDaAssinatura(g.assinaturaId);
-    if (pendente) DB.guarderias.remove(pendente.id);
-
-    // 2) Remove lançamento financeiro do período pago (somente o dele)
-    removerFinanceiro({ id: pago.guarderiaId, assinaturaId: g.assinaturaId });
-
-    // 3) Remove registro do histórico
-    DB.guarderiaHistorico.remove(pago.id);
-
-    // 4) Reinstala o período pago de volta como ativo/pendente
-    DB.guarderias.insert({
-      assinaturaId: g.assinaturaId,
-      cliente: pago.cliente,
-      prancha: pago.prancha,
-      vaga: pago.vaga,
-      tipo: pago.tipo,
-      plano: pago.plano,
-      inicio: pago.inicio,
-      vencimento: pago.vencimento,
-      referencia: pago.referencia,
-      valor: pago.valor,
-      obs: pago.obs,
-      encerrado: false,
-      pago: false,
-      dataPagamento: null,
-    });
-
-    UI.toast("Pagamento cancelado e período restaurado como pendente.", "info");
+    async function estornar(g) {
+    await DB.guarderias.estornar(g.id);
   }
 
   /* ---------- Formulário ---------- */
@@ -443,7 +354,7 @@ function painelHistorico() {
     const filtro = UI.$("#gdFiltro");
     if (filtro) filtro.onchange = (e) => { state.filtro = e.target.value; state.page = 1; App.refresh(); };
 
-root.addEventListener("click", (e) => {
+root.addEventListener("click", async (e) => {
       normalizarAssinaturas();
       const tab = e.target.closest("[data-gdtab]");
       if (tab) { state.tab = tab.dataset.gdtab; return App.refresh(); }
@@ -456,27 +367,45 @@ return UI.confirm({
           confirmText: "Cancelar pagamento",
           tone: "danger",
           message: `Cancelar o pagamento de ${hist.cliente} (${hist.referencia || ""})? A transação no Financeiro será removida e o período voltará como pendente.`,
-          onConfirm: () => UI.withLoading(() => {
-            estornarPorHistorico(hist);
-            App.refresh();
-          }),
+                    onConfirm: async () => {
+            UI.loading(true);
+            try {
+              await estornarPorHistorico(hist);
+              App.refresh();
+            } catch (e) {
+              UI.toast(e.message || "Não foi possível estornar o pagamento.", "error");
+            } finally {
+              UI.loading(false);
+            }
+          },
         });
       }
 const pag = e.target.closest("[data-gdpag]");
       if (pag) {
         const g = DB.guarderias.find(pag.dataset.gdpag);
         if (!g) return App.refresh();
-        if (!g.pago) {
-          UI.withLoading(() => {
-            pagar(g);
+                if (!g.pago) {
+          UI.loading(true);
+          try {
+            await pagar(g);
             UI.toast("Pagamento confirmado! Próximo período criado.", "success");
             App.refresh();
-          });
+          } catch (e) {
+            UI.toast(e.message || "Não foi possível registrar o pagamento.", "error");
+          } finally {
+            UI.loading(false);
+          }
         } else {
-          UI.withLoading(() => {
-            estornar(g);
+          UI.loading(true);
+          try {
+            await estornar(g);
+            UI.toast("Pagamento cancelado e período restaurado como pendente.", "info");
             App.refresh();
-          });
+          } catch (e) {
+            UI.toast(e.message || "Não foi possível estornar o pagamento.", "error");
+          } finally {
+            UI.loading(false);
+          }
         }
         return;
       }
