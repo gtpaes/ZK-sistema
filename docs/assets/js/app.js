@@ -1,4 +1,4 @@
-/** app.js — bootstrap, roteador de páginas, tema, busca global e seed de demonstração */
+/** app.js — bootstrap, roteador de páginas, tema, busca global  */
 
 const App = (() => {
   const PAGES = {
@@ -92,46 +92,13 @@ const App = (() => {
     document.title = `${s.empresa} — Painel Administrativo`;
   }
 
-    /* ---------- Dados de demonstração (apenas no 1º acesso / se o banco está vazio) ---------- */
-  function seed() {
-    if (DB.clientes.count() > 0) return; // já tem dados no backend
-
-    [
-      { nome: "Ana Beatriz Souza", cpf: "529.982.247-25", telefone: "(11) 98877-1234", whatsapp: "(11) 98877-1234", email: "ana.souza@email.com", endereco: "Av. Beira Mar, 320 — Maresias", observacoes: "Prefere pranchas 6'2\" fish." },
-      { nome: "Caio Ferreira", cpf: "168.995.350-09", telefone: "(11) 99120-8877", whatsapp: "(11) 99120-8877", email: "caio.ferreira@email.com", endereco: "Rua das Ondas, 45 — Camburi", observacoes: "Aluno de aulas semanais." },
-      { nome: "Marina Prado", cpf: "875.700.510-73", telefone: "(13) 98123-4455", whatsapp: "", email: "marina.prado@email.com", endereco: "Rua Atlântica, 900 — Guarujá", observacoes: "" },
-      { nome: "Rodrigo Lima", cpf: "231.002.999-00", telefone: "(11) 97744-0099", whatsapp: "(11) 97744-0099", email: "rodrigo@email.com", endereco: "Rua do Farol, 12 — Boiçucanga", observacoes: "Cliente desde 2021." },
-    ].forEach((c) => DB.clientes.insert(c));
-
-    [
-      { nome: "Prancha Fish 6'2\"", categoria: "Pranchas", preco: 3200, quantidade: 4, fornecedor: "Shape Norte", codigo: "PR-001" },
-      { nome: "Leash 6ft Premium", categoria: "Leash", preco: 180, quantidade: 3, fornecedor: "SurfGear", codigo: "LS-002" },
-      { nome: "Deck Traction Grip", categoria: "Deck", preco: 240, quantidade: 12, fornecedor: "SurfGear", codigo: "DK-003" },
-      { nome: "Parafina Tropical", categoria: "Parafina", preco: 25, quantidade: 48, fornecedor: "WaxBrasil", codigo: "PF-004" },
-      { nome: "Quilhas Thruster M", categoria: "Quilhas", preco: 420, quantidade: 2, fornecedor: "FinsCo", codigo: "QL-005" },
-      { nome: "Camiseta ZK Surf", categoria: "Camisetas", preco: 89, quantidade: 30, fornecedor: "ZK Wear", codigo: "CM-006" },
-    ].forEach((p) => DB.produtos.insert(p));
-
-    const dias = (n) => new Date(Date.now() - n * 86400000).toISOString();
-    [1200, 340, 890, 0, 1580, 620, 2100].forEach((total, i) =>
-      total ? DB.vendas.insert({ data: dias(6 - i), total, itens: [], pagamento: "Pix" }) : null
-    );
-
-    const prazo = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
-    [
-      { numero: "OS-1001", cliente: "Ana Beatriz Souza", marca: "Rusty", status: "Em conserto", prazo: prazo(2) },
-      { numero: "OS-1002", cliente: "Caio Ferreira", marca: "Al Merrick", status: "Aguardando aprovação", prazo: prazo(-1) },
-      { numero: "OS-1003", cliente: "Marina Prado", marca: "Lost", status: "Pronta", prazo: prazo(0) },
-      { numero: "OS-1004", cliente: "Rodrigo Lima", marca: "Firewire", status: "Entregue", prazo: prazo(-6) },
-    ].forEach((c) => DB.consertos.insert(c));
-  }
 
     /* ---------- Inicialização ---------- */
   async function init() {
     UI.loading(true);
     try {
       await DB.init(); // carrega o cache do backend (MongoDB Atlas)
-      seed();          // dados de demonstração se o banco estiver vazio
+      
     } catch (e) {
       console.warn("[App] falha ao carregar dados do backend:", e.message);
       UI.toast("Não foi possível conectar ao backend. Mostrando dados locais.", "warn");
