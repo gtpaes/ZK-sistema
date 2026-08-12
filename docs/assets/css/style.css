@@ -241,6 +241,23 @@ button {
   display: block;
 }
 
+.sidebar__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sidebar-logout {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #dceefc;
+}
+.sidebar-logout:hover {
+  color: #fff;
+}
+
 .sidebar-backdrop {
   display: none;
 }
@@ -325,20 +342,7 @@ button {
   color: var(--primary);
 }
 
-.icon-btn[data-tip]:hover::after {
-  bottom: auto !important;
-  top: calc(100% + 8px) !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-}
 
-
-.theme-btn[data-tip]:hover::after {
-  bottom: auto !important;
-  top: calc(100% + 8px) !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-}
 
 
 
@@ -392,6 +396,10 @@ button {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
+}
+.card:last-child {
+  margin-bottom: 0;
 }
 .card__head {
   display: flex;
@@ -852,6 +860,14 @@ table.table {
 }
 
 
+
+/* Botão de alternar tema (header fixo no topo): tooltip para BAIXO */
+#btnTheme[data-tip]:hover::after {
+  top: calc(100% + 8px) !important;
+  bottom: auto !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
 
 .only-mobile {
   display: none;

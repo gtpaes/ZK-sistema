@@ -84,7 +84,7 @@ const UI = (() => {
       .join("")}</tr>`;
   }
 
-  function pagination(total, page, perPage) {
+  function pagination(total, page, perPage, nav = "data-page-nav") {
     const pages = Math.max(1, Math.ceil(total / perPage));
     const from = total ? (page - 1) * perPage + 1 : 0;
     const to = Math.min(page * perPage, total);
@@ -94,14 +94,14 @@ const UI = (() => {
         if (p === 3) btns += `<span style="padding:0 4px;color:var(--text-muted)">…</span>`;
         continue;
       }
-      btns += `<button class="page-btn ${p === page ? "is-active" : ""}" data-page-nav="${p}">${p}</button>`;
+      btns += `<button class="page-btn ${p === page ? "is-active" : ""}" ${nav}="${p}">${p}</button>`;
     }
     return `
       <div class="pagination">
         <span class="info">Mostrando ${from}–${to} de ${total} registro(s)</span>
-        <button class="page-btn" data-page-nav="${page - 1}" ${page === 1 ? "disabled" : ""}><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="page-btn" ${nav}="${page - 1}" ${page === 1 ? "disabled" : ""}><i class="fa-solid fa-chevron-left"></i></button>
         ${btns}
-        <button class="page-btn" data-page-nav="${page + 1}" ${page >= pages ? "disabled" : ""}><i class="fa-solid fa-chevron-right"></i></button>
+        <button class="page-btn" ${nav}="${page + 1}" ${page >= pages ? "disabled" : ""}><i class="fa-solid fa-chevron-right"></i></button>
       </div>`;
   }
 

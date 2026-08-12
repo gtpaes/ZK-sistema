@@ -2,12 +2,11 @@
 
 const Clientes = (() => {
   const state = { term: "", sort: { key: "nome", dir: "asc" }, page: 1, perPage: 8 };
-  const FIELDS = ["nome", "cpf", "telefone", "email", "endereco"];
+  const FIELDS = ["nome", "cpf", "whatsapp", "email", "endereco"];
 
   const COLUMNS = [
     { key: "nome", label: "Cliente" },
-    { key: "cpf", label: "CPF" },
-    { key: "telefone", label: "Telefone" },
+    { key: "whatsapp", label: "WhatsApp" },
     { key: "email", label: "E-mail" },
     { key: "criadoEm", label: "Cadastro" },
     { label: "Ações", style: "text-align:right" },
@@ -20,7 +19,7 @@ const Clientes = (() => {
 
   function rows(list) {
     if (!list.length)
-      return `<tr><td colspan="6">${UI.empty(
+      return `<tr><td colspan="5">${UI.empty(
         "fa-user-plus",
         state.term ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado",
         state.term ? "Tente outro termo de busca." : "Clique em “Novo cliente” para começar."
@@ -36,10 +35,8 @@ const Clientes = (() => {
             <div><strong>${Utils.escape(c.nome)}</strong><small>${Utils.escape(c.endereco || "Sem endereço")}</small></div>
           </div>
         </td>
-        <td>${Utils.escape(c.cpf || "—")}</td>
         <td>
-          ${Utils.escape(c.telefone || "—")}
-          ${c.whatsapp ? `<br><a class="link-wa" target="_blank" rel="noopener" href="https://wa.me/55${Utils.onlyDigits(c.whatsapp)}"><i class="fa-brands fa-whatsapp"></i> ${Utils.escape(c.whatsapp)}</a>` : ""}
+          ${c.whatsapp ? `<a class="link-wa" target="_blank" rel="noopener" href="https://wa.me/55${Utils.onlyDigits(c.whatsapp)}"><i class="fa-brands fa-whatsapp"></i> ${Utils.escape(c.whatsapp)}</a>` : "—"}
         </td>
         <td>${Utils.escape(c.email || "—")}</td>
         <td>${Utils.date(c.criadoEm)}</td>
@@ -102,7 +99,6 @@ const Clientes = (() => {
       <form id="cliForm" class="form-grid" novalidate>
         <div class="field col-2"><label>Nome completo *</label><input name="nome" value="${v("nome")}" placeholder="Ex.: Ana Beatriz Souza" /><span class="error" data-err="nome"></span></div>
         <div class="field"><label>CPF</label><input name="cpf" data-mask="cpf" value="${v("cpf")}" placeholder="000.000.000-00" /><span class="error" data-err="cpf"></span></div>
-        <div class="field"><label>Telefone</label><input name="telefone" data-mask="phone" value="${v("telefone")}" placeholder="(00) 00000-0000" /></div>
         <div class="field"><label>WhatsApp</label><input name="whatsapp" data-mask="phone" value="${v("whatsapp")}" placeholder="(00) 00000-0000" /></div>
         <div class="field"><label>E-mail</label><input name="email" value="${v("email")}" placeholder="cliente@email.com" /><span class="error" data-err="email"></span></div>
         <div class="field col-2"><label>Endereço</label><input name="endereco" value="${v("endereco")}" placeholder="Rua, número, bairro, cidade" /></div>
@@ -168,8 +164,8 @@ const Clientes = (() => {
       title: c.nome,
       size: 560,
       body: `<div class="detail-grid">
-        ${item("CPF", c.cpf)}${item("Telefone", c.telefone)}
-        ${item("WhatsApp", c.whatsapp)}${item("E-mail", c.email)}
+        ${item("CPF", c.cpf)}${item("WhatsApp", c.whatsapp)}
+        ${item("E-mail", c.email)}
         ${item("Endereço", c.endereco, true)}
         ${item("Observações", c.observacoes, true)}
         ${item("Cadastrado em", Utils.date(c.criadoEm))}${item("Atualizado em", Utils.date(c.atualizadoEm))}

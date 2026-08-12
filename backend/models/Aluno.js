@@ -13,6 +13,7 @@ const alunoSchema = new mongoose.Schema(
   {
     id: { type: String, default: uid, unique: true, index: true },
     nome: { type: String, required: [true, "Nome do aluno é obrigatório"], trim: true },
+    clienteId: { type: String, trim: true, default: null },
     telefone: { type: String, trim: true },
     nivel: { type: String, enum: ["Iniciante", "Intermediário", "Avançado"], default: "Iniciante" },
     turma: { type: String, trim: true },

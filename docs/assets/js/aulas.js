@@ -9,6 +9,16 @@ const Aulas = (() => {
   const corStatus = (s) =>
     s === "Realizada" ? "success" : s === "Cancelada" ? "danger" : s === "Agendada" ? "info" : "";
 
+  /** Resolve o nome atual do cliente (por referência) para exibição consistente. */
+  const nomeCliente = (rec) => {
+    if (!rec) return "";
+    if (rec.clienteId) {
+      const c = DB.clientes.find(rec.clienteId);
+      if (c && c.nome) return c.nome;
+    }
+    return rec.aluno || rec.nome || "";
+  };
+
   /* ---------- Render ---------- */
   function render() {
     const alunos = Utils.search(DB.alunos.all(), state.term, ["nome", "professor", "nivel"]);
@@ -94,8 +104,8 @@ const Aulas = (() => {
         <div class="cal-cell ${hj === dia ? "is-today" : ""}">
           <div class="cal-num">${dia}</div>
           ${aulas.slice(0, 3).map((a) => `
-            <div class="cal-aula cal-aula--${corStatus(a.status)}" data-aula="${a.id}" title="${Utils.escape(a.aluno)} — ${a.horario}">
-              ${Utils.escape(a.horario)} ${Utils.escape(a.aluno)}
+            <div class="cal-aula cal-aula--${corStatus(a.status)}" data-aula="${a.id}" title="${Utils.escape(nomeCliente(a))} — ${a.horario}">
+              ${Utils.escape(a.horario)} ${Utils.escape(nomeCliente(a))}
             </div>`).join("")}
           ${aulas.length > 3 ? `<div class="cal-more">+${aulas.length - 3} mais</div>` : ""}
         </div>`;
@@ -107,17 +117,22 @@ const Aulas = (() => {
 
   function abrirAula(id) {
     const a = id ? DB.aulas.find(id) : {};
-    const alunos = Utils.sort(DB.alunos.all(), "nome");
+    const clientes = Utils.sort(DB.clientes.all(), "nome");
     const profs = Utils.sort(DB.professores.all(), "nome");
+    const selectedId = (a.clienteId && clientes.some((c) => c.id === a.clienteId))
+      ? a.clienteId
+      : ((clientes.find((c) => c.nome === a.aluno)) || {}).id || "";
     const v = (k) => Utils.escape(a[k] ?? "");
+    if (!clientes.length) return UI.toast("Cadastre um cliente antes de marcar uma aula.", "warn");
 
     UI.openModal({
       title: id ? "Editar aula" : "Marcar aula",
       body: `
         <form id="aulaForm" class="form-grid">
-          <div class="field col-2"><label>Aluno *</label>
-            <select name="aluno"><option value="">Selecione...</option>${alunos.map((al) => `<option ${a.aluno === al.nome ? "selected" : ""}>${Utils.escape(al.nome)}</option>`).join("")}</select>
+          <div class="field col-2"><label>Aluno * (cliente)</label>
+            <select name="aluno"><option value="">Selecione...</option>${clientes.map((c) => `<option value="${c.id}" ${selectedId === c.id ? "selected" : ""}>${Utils.escape(c.nome)}</option>`).join("")}</select>
             <span class="error" data-err="aluno"></span>
+            <small style="color:var(--text-muted)">Selecionado a partir dos clientes cadastrados.</small>
           </div>
           <div class="field"><label>Professor *</label>
             <select name="professor"><option value="">Selecione...</option>${profs.map((p) => `<option ${a.professor === p.nome ? "selected" : ""}>${Utils.escape(p.nome)}</option>`).join("")}</select>
@@ -160,8 +175,18 @@ footer: `<button class="btn btn--ghost" data-close>Cancelar</button>
       if (!d.professor) errs.professor = "Selecione o professor.";
       document.querySelectorAll("#aulaForm .error").forEach((e) => (e.textContent = errs[e.dataset.err] || ""));
       if (Object.keys(errs).length) return;
+      const cli = clientes.find((c) => c.id === d.aluno);
+      const payload = {
+        aluno: cli ? cli.nome : d.aluno,
+        clienteId: d.aluno,
+        professor: d.professor,
+        data: d.data,
+        horario: d.horario,
+        status: d.status,
+        obs: d.obs,
+      };
       UI.withLoading(() => {
-        id ? DB.aulas.update(id, d) : DB.aulas.insert(d);
+        id ? DB.aulas.update(id, payload) : DB.aulas.insert(payload);
         UI.closeModal();
         UI.toast(id ? "Aula atualizada!" : "Aula agendada!");
         App.refresh();
@@ -191,7 +216,7 @@ footer: `<button class="btn btn--ghost" data-close>Cancelar</button>
       <thead><tr><th>Aluno</th><th>Turma</th><th>Nível</th><th>Mensalidade</th><th>Situação</th><th style="text-align:right">Ações</th></tr></thead>
       <tbody>${alunos.length ? alunos.map((a) => `
         <tr>
-          <td><div class="cli-cell"><span class="cli-avatar">${Utils.initials(a.nome)}</span><div><strong>${Utils.escape(a.nome)}</strong><small>${Utils.escape(a.telefone || "—")}</small></div></div></td>
+          <td><div class="cli-cell"><span class="cli-avatar">${Utils.initials(nomeCliente(a))}</span><div><strong>${Utils.escape(nomeCliente(a))}</strong><small>${Utils.escape(a.telefone || "—")}</small></div></div></td>
           <td>${Utils.escape(a.turma || "—")}</td>
           <td>${Utils.escape(a.nivel || "—")}</td>
           <td>${Utils.money(a.mensalidade)}</td>
@@ -209,23 +234,37 @@ footer: `<button class="btn btn--ghost" data-close>Cancelar</button>
   /* ---------- Formulários ---------- */
   function formAluno() {
     const turmas = DB.turmas.all();
+    const clientes = Utils.sort(DB.clientes.all(), "nome");
+    if (!clientes.length) {
+      return UI.toast("Cadastre um cliente antes de matricular um aluno.", "warn");
+    }
     UI.openModal({
-      title: "Novo aluno",
+      title: "Novo aluno (vínculo com cliente)",
       body: `<form id="alForm" class="form-grid">
-        <div class="field col-2"><label>Nome *</label><input name="nome" /><span class="error" data-err="nome"></span></div>
-        <div class="field"><label>Telefone</label><input name="telefone" data-mask="phone" /></div>
+        <div class="field col-2"><label>Cliente *</label>
+          <select name="clienteId">${clientes.map((c) => `<option value="${c.id}">${Utils.escape(c.nome)}</option>`).join("")}</select>
+          <span class="error" data-err="clienteId"></span>
+          <small style="color:var(--text-muted)">O aluno é vinculado a um cliente cadastrado no sistema.</small>
+        </div>
         <div class="field"><label>Nível</label><select name="nivel">${NIVEIS.map((n) => `<option>${n}</option>`).join("")}</select></div>
         <div class="field"><label>Turma</label><select name="turma"><option value="">Sem turma</option>${turmas.map((t) => `<option>${Utils.escape(t.nome)}</option>`).join("")}</select></div>
-        <div class="field"><label>Mensalidade</label><input name="mensalidade" type="number" min="0" step="0.01" value="250" /></div>
+        <div class="field col-2"><label>Mensalidade</label><input name="mensalidade" type="number" min="0" step="0.01" value="250" /></div>
       </form>`,
       footer: `<button class="btn btn--ghost" data-close>Cancelar</button><button class="btn btn--primary" id="alSave"><i class="fa-solid fa-floppy-disk"></i>Salvar</button>`,
     });
     UI.$("#alSave").onclick = () => {
       const d = Object.fromEntries(new FormData(UI.$("#alForm")).entries());
-      if (!d.nome.trim()) { UI.$("#alForm .error").textContent = "Informe o nome."; return; }
-      d.mensalidade = Number(d.mensalidade) || 0;
-      d.pago = false;
-      UI.withLoading(() => { DB.alunos.insert(d); UI.closeModal(); UI.toast("Aluno matriculado!"); App.refresh(); });
+      if (!d.clienteId) { UI.$("#alForm .error").textContent = "Selecione o cliente."; return; }
+      const cli = clientes.find((c) => c.id === d.clienteId);
+      const payload = {
+        nome: cli ? cli.nome : "",
+        clienteId: d.clienteId,
+        nivel: d.nivel,
+        turma: d.turma,
+        mensalidade: Number(d.mensalidade) || 0,
+        pago: false,
+      };
+      UI.withLoading(() => { DB.alunos.insert(payload); UI.closeModal(); UI.toast("Aluno matriculado!"); App.refresh(); });
     };
   }
 

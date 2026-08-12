@@ -31,7 +31,7 @@ const confeccoes = DB.confeccoes.all();
     return {
       clientes: DB.clientes.count(),
       produtos: produtos.length,
-      estoqueBaixo: produtos.filter((p) => Number(p.quantidade) <= (cfg.estoqueMinimo ?? 5)).length,
+      estoqueBaixo: produtos.filter((p) => Number(p.quantidade) <= Utils.limiteMinimo(p)).length,
       vendasHoje: vendasHoje.length,
       totalVendasHoje: vendasHoje.reduce((s, v) => s + (v.total || 0), 0),
       andamento: consertos.filter((c) => STATUS_ANDAMENTO.includes(c.status)).length,

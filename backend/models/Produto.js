@@ -17,6 +17,7 @@ const produtoSchema = new mongoose.Schema(
     codigo: { type: String, trim: true },
     preco: { type: Number, default: 0, min: 0 },
     quantidade: { type: Number, default: 0, min: 0 },
+    estoqueMinimo: { type: Number, default: null, min: 0 },
     fornecedor: { type: String, trim: true },
     descricao: { type: String, trim: true },
     criadoEm: { type: String, default: () => new Date().toISOString() },

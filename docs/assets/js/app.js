@@ -120,6 +120,18 @@ const App = (() => {
     UI.$("#btnMenu").onclick = openSidebar;
     UI.$("#sidebarBackdrop").onclick = closeSidebar;
 
+    const logoutBtn = UI.$("#btnLogout");
+    if (logoutBtn) {
+      logoutBtn.onclick = () => {
+        UI.loading(true);
+        Promise.resolve(Auth.logout())
+          .catch(() => {})
+          .finally(() => {
+            window.location.href = "login.html";
+          });
+      };
+    }
+
     UI.$("#globalSearch").addEventListener(
       "input",
       Utils.debounce((e) => {

@@ -14,6 +14,31 @@ const Produtos = (() => {
     "Roupas",
   ];
 
+  /** Mapa de categoria → prefixo do código interno */
+  const PREFIXO = {
+    Pranchas: "PR",
+    Leash: "LE",
+    Deck: "DE",
+    Parafina: "PA",
+    Quilhas: "QU",
+    Camisetas: "CM",
+    "Acessórios": "AC",
+    Roupas: "RO",
+  };
+
+  /** Gera o próximo código de produto por categoria (ex.: CM-001, CM-002...). */
+  function proximoCodigo(categoria) {
+    const prefixo = PREFIXO[categoria];
+    if (!prefixo) return "";
+    let max = 0;
+    const re = new RegExp(`^${prefixo}-(\\d+)$`, "i");
+    DB.produtos.all().forEach((p) => {
+      const m = re.exec(String(p.codigo || "").trim());
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    });
+    return `${prefixo}-${String(max + 1).padStart(3, "0")}`;
+  }
+
   const COLUMNS = [
     { key: "nome", label: "Produto" },
     { key: "categoria", label: "Categoria" },
@@ -23,8 +48,6 @@ const Produtos = (() => {
     { label: "Ações", style: "text-align:right" },
   ];
 
-  const minimo = () => DB.settings.get().estoqueMinimo || 5;
-
   function filtered() {
     let list = DB.produtos.all();
     if (state.categoria) list = list.filter((p) => p.categoria === state.categoria);
@@ -32,9 +55,10 @@ const Produtos = (() => {
     return Utils.sort(list, state.sort.key, state.sort.dir);
   }
 
-  function badgeEstoque(q) {
+  function badgeEstoque(p) {
+    const q = Number(p.quantidade) || 0;
     if (q <= 0) return `<span class="badge badge--danger">Sem estoque</span>`;
-    if (q <= minimo()) return `<span class="badge badge--warn">${q} un. (baixo)</span>`;
+    if (q <= Utils.limiteMinimo(p)) return `<span class="badge badge--warn">${q} un. (baixo)</span>`;
     return `<span class="badge badge--success">${q} un.</span>`;
   }
 
@@ -54,7 +78,7 @@ const Produtos = (() => {
         <td>${Utils.escape(p.categoria || "—")}</td>
         <td>${Utils.escape(p.codigo || "—")}</td>
         <td>${Utils.money(p.preco)}</td>
-        <td>${badgeEstoque(Number(p.quantidade) || 0)}</td>
+        <td>${badgeEstoque(p)}</td>
         <td>
           <div class="row-actions">
             <button class="icon-btn btn--sm" data-edit="${p.id}" data-tip="Editar" style="width:32px;height:32px"><i class="fa-solid fa-pen"></i></button>
@@ -74,7 +98,7 @@ const Produtos = (() => {
       (s, p) => s + (Number(p.preco) || 0) * (Number(p.quantidade) || 0),
       0,
     );
-    const baixos = all.filter((p) => (Number(p.quantidade) || 0) <= minimo()).length;
+    const baixos = all.filter((p) => (Number(p.quantidade) || 0) <= Utils.limiteMinimo(p)).length;
 
     return `
       <div class="page-actions">
@@ -119,9 +143,10 @@ const Produtos = (() => {
         <div class="field"><label>Categoria</label>
           <select name="categoria">${CATEGORIAS.map((c) => `<option ${p.categoria === c ? "selected" : ""}>${c}</option>`).join("")}</select>
         </div>
-        <div class="field"><label>Código interno</label><input name="codigo" value="${v("codigo")}" placeholder="PR-001" /></div>
+        <div class="field"><label>Código interno${p.codigo ? "" : " (automático)"}</label><input name="codigo" id="codAuto" value="${v("codigo")}" placeholder="PR-001" ${p.codigo ? "" : "readonly"} /></div>
         <div class="field"><label>Preço de venda *</label><input name="preco" type="number" step="0.01" min="0" value="${v("preco")}" /><span class="error" data-err="preco"></span></div>
         <div class="field"><label>Quantidade em estoque</label><input name="quantidade" type="number" min="0" value="${p.quantidade ?? 0}" /></div>
+        <div class="field"><label>Limite mínimo (estoque)</label><input name="estoqueMinimo" type="number" min="0" value="${p.estoqueMinimo != null && p.estoqueMinimo !== "" ? p.estoqueMinimo : ""}" placeholder="Usa o global (${Utils.limiteMinimo(p)})" /></div>
         <div class="field col-2"><label>Fornecedor</label><input name="fornecedor" value="${v("fornecedor")}" /></div>
         <div class="field col-2"><label>Descrição</label><textarea name="descricao">${v("descricao")}</textarea></div>
       </form>`;
@@ -135,6 +160,16 @@ const Produtos = (() => {
       footer: `<button class="btn btn--ghost" data-close>Cancelar</button>
                <button class="btn btn--primary" id="prodSave"><i class="fa-solid fa-floppy-disk"></i>Salvar</button>`,
     });
+    const codEl = UI.$("#codAuto");
+    const catSel = UI.$("#prodForm [name=categoria]");
+    if (codEl && catSel && !id) {
+      const atualizaCodigo = () => {
+        codEl.value = proximoCodigo(catSel.value) || "";
+      };
+      atualizaCodigo();
+      catSel.addEventListener("change", atualizaCodigo);
+    }
+
     UI.$("#prodSave").onclick = () => {
       const data = Object.fromEntries(new FormData(UI.$("#prodForm")).entries());
       const errs = {};
@@ -146,6 +181,8 @@ const Produtos = (() => {
       if (Object.keys(errs).length) return;
       data.preco = Number(data.preco);
       data.quantidade = Number(data.quantidade) || 0;
+      data.estoqueMinimo =
+        data.estoqueMinimo === "" || data.estoqueMinimo == null ? null : Number(data.estoqueMinimo);
       UI.withLoading(() => {
         id ? DB.produtos.update(id, data) : DB.produtos.insert(data);
         UI.closeModal();
@@ -223,7 +260,14 @@ return UI.confirm({
 
 /** Estoque — movimentações de entrada e saída com histórico e alertas */
 const Estoque = (() => {
-  const state = { tipo: "", page: 1, perPage: 8 };
+  const state = { tipo: "", term: "", page: 1, perPage: 8, pageProd: 1, perPageProd: 8 };
+
+  function badgeInv(p) {
+    const q = Number(p.quantidade) || 0;
+    if (q <= 0) return `<span class="badge badge--danger">Sem estoque</span>`;
+    if (q <= Utils.limiteMinimo(p)) return `<span class="badge badge--warn">${q} un. (baixo)</span>`;
+    return `<span class="badge badge--success">${q} un.</span>`;
+  }
 
   function movimentar() {
     const produtos = Utils.sort(DB.produtos.all(), "nome");
@@ -279,12 +323,13 @@ const Estoque = (() => {
   }
 
   function render() {
-    const min = DB.settings.get().estoqueMinimo || 5;
     const produtos = DB.produtos.all();
-    const alertas = produtos.filter((p) => (Number(p.quantidade) || 0) <= min);
+    const alertas = produtos.filter((p) => (Number(p.quantidade) || 0) <= Utils.limiteMinimo(p));
     let movs = Utils.sort(DB.movimentacoes.all(), "data", "desc");
     if (state.tipo) movs = movs.filter((m) => m.tipo === state.tipo);
     const pageList = Utils.paginate(movs, state.page, state.perPage);
+    const invList = Utils.sort(Utils.search(produtos, state.term, ["nome", "categoria", "codigo"]), "nome", "asc");
+    const invRows = Utils.paginate(invList, state.pageProd, state.perPageProd);
 
     return `
       <div class="page-actions">
@@ -294,6 +339,33 @@ const Estoque = (() => {
           <div class="mini-stat"><i class="fa-solid fa-bell"></i><div><strong>${alertas.length}</strong><small>Alertas de estoque</small></div></div>
         </div>
         <button class="btn btn--primary" id="btnMov"><i class="fa-solid fa-arrow-right-arrow-left"></i>Movimentar estoque</button>
+      </div>
+
+      <div class="card">
+        <div class="card__head"><div><h3>Estoque completo</h3><p>Todos os produtos cadastrados, incluindo sem estoque</p></div>
+          <div class="search" style="max-width:260px"><i class="fa-solid fa-magnifying-glass"></i>
+            <input id="invSearch" type="search" placeholder="Buscar no estoque..." value="${Utils.escape(state.term)}" />
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Produto</th><th>Categoria</th><th>Código</th><th>Estoque atual</th><th>Limite mín.</th><th>Status</th></tr></thead>
+            <tbody>
+              ${invRows.length
+                ? invRows.map((p) => `
+                    <tr>
+                      <td><strong>${Utils.escape(p.nome)}</strong><small>${Utils.escape(p.fornecedor || "")}</small></td>
+                      <td>${Utils.escape(p.categoria || "—")}</td>
+                      <td>${Utils.escape(p.codigo || "—")}</td>
+                      <td><strong>${Number(p.quantidade) || 0} un.</strong></td>
+                      <td>${Utils.limiteMinimo(p)} un.</td>
+                      <td>${badgeInv(p)}</td>
+                    </tr>`).join("")
+                : `<tr><td colspan="6">${UI.empty("fa-box-open", "Nenhum produto", state.term ? "Tente outra busca." : "Cadastre produtos para ver o estoque.")}</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+        ${invList.length ? UI.pagination(invList.length, state.pageProd, state.perPageProd, "data-pnavprod") : ""}
       </div>
 
       <div class="grid-2">
@@ -369,7 +441,7 @@ const Estoque = (() => {
         </div>
 
         <div class="card">
-          <div class="card__head"><div><h3>Alertas de estoque baixo</h3><p>Igual ou abaixo de ${min} unidades</p></div></div>
+          <div class="card__head"><div><h3>Alertas de estoque baixo</h3><p>Produtos igual ou abaixo do limite mínimo</p></div></div>
           <div class="card__body">
             ${
               alertas.length
@@ -401,6 +473,9 @@ const Estoque = (() => {
     state.page = 1;
     App.refresh();
   };
+
+  const invSearch = UI.$("#invSearch");
+  if (invSearch) invSearch.addEventListener("input", Utils.debounce((e) => { state.term = e.target.value; state.pageProd = 1; App.refresh(true); }, 300));
 
   root.addEventListener("click", (e) => {
 
@@ -459,6 +534,12 @@ UI.confirm({
     if (nav && !nav.disabled) {
       state.page = Number(nav.dataset.pageNav);
       App.refresh();
+    }
+
+    const pnav = e.target.closest("[data-pnavprod]");
+    if (pnav && !pnav.disabled) {
+      state.pageProd = Number(pnav.dataset.pnavprod);
+      return App.refresh();
     }
 
   });

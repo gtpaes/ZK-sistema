@@ -15,7 +15,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 14px;
-  margin-bottom: 18px;
+  /* !important para bater o `margin:0` inline que anula em todas as páginas */
+  margin-bottom: 18px !important;
 }
 .stat-strip .mini-stat {
   background: var(--surface);

@@ -76,7 +76,7 @@ const Utils = {
   return list.filter(item => {
 
     const texto = fields
-      .map(f => normalize(item[f]))
+      .map(f => Utils.normalize(item && item[f]))
       .join(" ");
 
     return words.every(word => texto.includes(word));
@@ -109,4 +109,22 @@ const Utils = {
     String(v).replace(/[&<>"']/g, (c) =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
     ),
+
+  /** Normaliza texto p/ busca: minúsculas, sem acentos, sem espaços extras */
+  normalize: (text = "") =>
+    String(text || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim(),
+
+  /**
+   * Limite mínimo eficaz de um produto: usa o estoqueMinimo individual,
+   * e quando não definido cai no limite global (configurações).
+   */
+  limiteMinimo: (p) => {
+    const g = typeof DB !== "undefined" && DB.settings ? (DB.settings.get().estoqueMinimo ?? 5) : 5;
+    const v = p && p.estoqueMinimo;
+    return v !== undefined && v !== null && v !== "" ? Number(v) : g;
+  },
 };
