@@ -64,13 +64,11 @@ const App = (() => {
 
   /* ---------- Tema ---------- */
   function applyTheme(theme) {
-    document.documentElement.dataset.theme = theme;
-    UI.$("#btnTheme").innerHTML = `<i class="fa-solid fa-${theme === "dark" ? "sun" : "moon"}"></i>`;
-    DB.settings.set({ tema: theme });
+    const finalTheme = Theme.apply(theme);
+    UI.$("#btnTheme").innerHTML = `<i class="fa-solid fa-${finalTheme === "dark" ? "sun" : "moon"}"></i>`;
   }
 
-  const toggleTheme = () =>
-    applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+  const toggleTheme = () => Theme.toggle();
 
   /* ---------- Sidebar mobile ---------- */
   const openSidebar = () => {
@@ -96,15 +94,24 @@ const App = (() => {
     /* ---------- Inicialização ---------- */
   async function init() {
     UI.loading(true);
+    Theme.init();
+
     try {
       await DB.init(); // carrega o cache do backend (MongoDB Atlas)
-      
     } catch (e) {
       console.warn("[App] falha ao carregar dados do backend:", e.message);
       UI.toast("Não foi possível conectar ao backend. Mostrando dados locais.", "warn");
     }
+
+    try {
+      await Auth.me();
+    } catch (err) {
+      window.location.href = "login.html";
+      return;
+    }
+
     applySettings();
-    applyTheme(DB.settings.get().tema || "light");
+    applyTheme();
 
     document.querySelectorAll(".nav__item").forEach((item) =>
       item.addEventListener("click", () => navigate(item.dataset.page))
@@ -133,6 +140,7 @@ const App = (() => {
   return { navigate, refresh, applySettings, applyTheme };
 })();
 
+
 /** Configurações — empresa, tema, exportar/importar/limpar banco local */
 const Config = (() => {
   function render() {
@@ -146,13 +154,7 @@ const Config = (() => {
               <div class="field col-2"><label>Nome da empresa</label><input name="empresa" value="${Utils.escape(s.empresa)}" /></div>
               <div class="field"><label>Administrador</label><input name="admin" value="${Utils.escape(s.admin)}" /></div>
               <div class="field"><label>Cargo</label><input name="cargo" value="${Utils.escape(s.cargo)}" /></div>
-              <div class="field"><label>Estoque mínimo (alerta)</label><input name="estoqueMinimo" type="number" min="0" value="${s.estoqueMinimo}" /></div>
-              <div class="field"><label>Tema</label>
-                <select name="tema">
-                  <option value="light" ${s.tema === "light" ? "selected" : ""}>Claro</option>
-                  <option value="dark" ${s.tema === "dark" ? "selected" : ""}>Escuro</option>
-                </select>
-              </div>
+              <div class="field col-2"><label>Estoque mínimo (alerta)</label><input name="estoqueMinimo" type="number" min="0" value="${s.estoqueMinimo}" /></div>
               <div class="col-2"><button type="button" class="btn btn--primary" id="cfgSave"><i class="fa-solid fa-floppy-disk"></i>Salvar configurações</button></div>
             </form>
           </div>
@@ -178,7 +180,6 @@ const Config = (() => {
       const data = Object.fromEntries(new FormData(UI.$("#cfgForm")).entries());
       DB.settings.set({ ...data, estoqueMinimo: Number(data.estoqueMinimo) });
       App.applySettings();
-      App.applyTheme(data.tema);
       UI.toast("Configurações salvas!");
     };
 

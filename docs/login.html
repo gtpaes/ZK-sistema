@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login — ZK SurfHouse</title>
+    <meta name="description" content="Entrar no painel administrativo da ZK SurfHouse." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="icon" href="assets/img/ZKlogo.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="stylesheet" href="assets/css/responsive.css" />
+    <style>
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: #f4f6fb;
+      }
+      .login-card {
+        width: min(420px, 100%);
+        padding: 32px;
+        border-radius: 24px;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+        background: #ffffff;
+        border: 1px solid rgba(15, 23, 42, 0.06);
+      }
+      .login-card img {
+        display: block;
+        margin: 0 auto 18px;
+      }
+      .login-card h1 {
+        margin-bottom: 16px;
+        text-align: center;
+        color: #111827;
+      }
+      .login-card p {
+        color: #6b7280;
+        margin-bottom: 24px;
+        text-align: center;
+      }
+      .login-card form {
+        display: grid;
+        gap: 16px;
+      }
+      .login-card label {
+        display: block;
+        font-size: 0.95rem;
+        margin-bottom: 6px;
+        color: #111827;
+        font-weight: 600;
+      }
+      .login-card input {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 14px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: #111827;
+      }
+      .login-card input::placeholder {
+        color: #6b7280;
+        opacity: 1;
+      }
+      .login-card input:focus {
+        border-color: #4f8f72;
+        box-shadow: 0 0 0 3px rgba(18, 117, 82, 0.12);
+      }
+      .login-card button {
+        width: 100%;
+        background: #127552;
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 14px 28px rgba(18, 117, 82, 0.16);
+      }
+      .login-card button:hover {
+        filter: brightness(1.05);
+      }
+      .login-footer {
+        margin-top: 16px;
+        font-size: 0.9rem;
+        color: #6b7280;
+        text-align: center;
+      }
+      .login-footer a {
+        color: inherit;
+        text-decoration: underline;
+      }
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-card">
+      <img src="assets/img/ZKlogo.png" alt="ZK SurfHouse" style="width:72px;margin-bottom:18px" />
+      <h1>Entrar</h1>
+      <p>Faça login para acessar o painel administrativo.</p>
+      <form id="loginForm">
+        <div>
+          <label for="email">Email</label>
+          <input id="email" type="email" name="email" autocomplete="email" required />
+        </div>
+        <div>
+          <label for="password">Senha</label>
+          <input id="password" type="password" name="password" autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="btn btn--primary">Entrar</button>
+      </form>
+      <div class="login-footer">
+        <p>Se ainda não tiver conta, peça o token de registro inicial ao administrador.</p>
+      </div>
+    </div>
+
+    <div class="modal" id="modal" aria-hidden="true">
+      <div class="modal__backdrop" data-close></div>
+      <div class="modal__box" role="dialog" aria-modal="true">
+        <header class="modal__head">
+          <h3 id="modalTitle">Título</h3>
+          <button class="icon-btn" data-close aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+        <div class="modal__body" id="modalBody"></div>
+        <footer class="modal__foot" id="modalFoot"></footer>
+      </div>
+    </div>
+
+    <div class="toasts" id="toasts"></div>
+    <div class="loader" id="loader"><span class="spinner"></span></div>
+
+    <script>
+      window.API_URL = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+        ? "http://localhost:5000/api"
+        : "https://zk-surfhouse-api.onrender.com/api";
+    </script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/ui.js"></script>
+    <script src="assets/js/theme.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script>
+      const toast = UI.toast;
+      const loading = UI.loading;
+
+      const init = () => {
+        Theme.init();
+        const form = document.querySelector("#loginForm");
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          loading(true);
+          try {
+            const email = document.querySelector("#email").value.trim();
+            const password = document.querySelector("#password").value;
+            await Auth.login(email, password);
+            window.location.href = "index.html";
+          } catch (err) {
+            toast(err.message || "Erro ao fazer login.", "error");
+          } finally {
+            loading(false);
+          }
+        });
+      };
+
+      document.addEventListener("DOMContentLoaded", init);
+    </script>
+  </body>
+</html>

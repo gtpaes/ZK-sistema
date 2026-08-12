@@ -22,7 +22,11 @@ const Api = (() => {
 
   /** Envolve fetch; desempacota { success, data, message }; lança em erro. */
   async function request(method, path, body) {
-    const opts = { method, headers: HEADERS };
+    const opts = {
+      method,
+      headers: HEADERS,
+      credentials: "include",
+    };
     if (body !== undefined) opts.body = JSON.stringify(body);
 
     let res;

@@ -21,7 +21,7 @@ async function obterOuCriar() {
 async function obter(req, res, next) {
   try {
     const cfg = await obterOuCriar();
-    const { chave, ...dados } = cfg.toObject();
+    const { chave, tema, ...dados } = cfg.toObject();
     res.json({ success: true, data: dados });
   } catch (err) {
     next(err);
@@ -32,7 +32,7 @@ async function obter(req, res, next) {
 async function atualizar(req, res, next) {
   try {
     const cfg = await obterOuCriar();
-    const permitidos = ["empresa", "admin", "cargo", "tema", "estoqueMinimo"];
+    const permitidos = ["empresa", "admin", "cargo", "estoqueMinimo"];
 
     // Atualiza somente campos permitidos
     permitidos.forEach((campo) => {

@@ -8,7 +8,7 @@
   --ocean-900: #123d2c;
   --ocean-800: #17513a;
   --ocean-700: #1d6a4a;
-  --ocean-600: #2f9e63;
+  --ocean-600: #2a8753;
   --ocean-500: #4cbf80;
   --aqua-500: #7ed957;
   --aqua-400: #a5e887;
@@ -22,15 +22,15 @@
   --text-muted: #5f7d6c;
   --primary: var(--ocean-600);
   --primary-strong: var(--ocean-700);
-  --primary-soft: #e3f6ea;
+  --primary-soft: #d6eed7;
   --accent: var(--aqua-500);
   --accent-soft: #eaf9e0;
   --danger: #e23d5b;
   --danger-soft: #fdeaee;
   --warn: #e8961d;
   --warn-soft: #fdf3e2;
-  --success: #17a06b;
-  --success-soft: #e4f7ee;
+  --success: #127552;
+  --success-soft: #dceede;
 
   --radius-sm: 8px;
   --radius: 14px;
@@ -325,17 +325,21 @@ button {
   color: var(--primary);
 }
 
-.theme-btn {
-  bottom: auto;
-  top: calc(100% + 8px);
+.icon-btn[data-tip]:hover::after {
+  bottom: auto !important;
+  top: calc(100% + 8px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
 }
+
 
 .theme-btn[data-tip]:hover::after {
   bottom: auto !important;
   top: calc(100% + 8px) !important;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 50% !important;
+  transform: translateX(-50%) !important;
 }
+
 
 
 .user-chip {

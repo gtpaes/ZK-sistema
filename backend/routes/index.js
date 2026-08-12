@@ -12,6 +12,8 @@
 
 const express = require("express");
 const router = express.Router();
+const authRoutes = require("./auth");
+const { auth } = require("../middleware/auth");
 
 // Models
 const Cliente = require("../models/Cliente");
@@ -168,6 +170,12 @@ router.post("/guarderias", guarderias.criar);
 router.put("/guarderias/:id", guarderias.atualizar);
 router.delete("/guarderias/:id", guarderias.remover);
 router.delete("/guarderias/:id/financeiro", guarderiaController.removerFinanceiro);
+
+/* ============ AUTENTICAÇÃO ============ */
+router.use("/auth", authRoutes);
+
+/* ============ PROTEÇÃO DAS ROTAS ============ */
+router.use(auth);
 
 /* ============ CONFIGURAÇÕES ============ */
 router.get("/configuracoes", configuracaoController.obter);
