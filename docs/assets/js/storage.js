@@ -83,7 +83,7 @@ const DB = (() => {
     /** Carrega todas as coleções + settings do backend (chamar uma vez no startup). */
   async function init() {
     if (ready) return true;
-    await Promise.all(COLS.map((c) => Promise.resolve()
+    await Promise.all(COLLECTIONS.map((c) => Promise.resolve()
       .then(() => R[c] && R[c].all())
       .then((d) => { cache[c] = Array.isArray(d) ? d : []; })
       .catch((e) => { console.warn(`[DB] carregar ${c}:`, e.message); cache[c] = []; })));

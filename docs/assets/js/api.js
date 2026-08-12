@@ -4,7 +4,7 @@
  * A fonte de verdade é o backend Express: http://localhost:5000/api
  * Este arquivo NÃO usa localStorage — tudo passa pelo servidor (MongoDB Atlas).
  *
- * Ajuste `window.API_URL` (ex.: "https://api.meudominio.com/api") para produção.
+ * 
  *
  * Exemplos:
  *   await Api.clientes.all()
@@ -17,7 +17,7 @@
 const Api = (() => {
   const BASE =
     (typeof window !== "undefined" && window.API_URL) ||
-    "http://localhost:5000/api";
+    "https://zk-surfhouse-api.onrender.com/";
   const HEADERS = { "Content-Type": "application/json" };
 
   /** Envolve fetch; desempacota { success, data, message }; lança em erro. */
