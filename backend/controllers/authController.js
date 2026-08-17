@@ -14,6 +14,11 @@ const cookieOptions = {
   sameSite: isProd ? "none" : "lax",
   maxAge: COOKIE_MAX_AGE,
   path: "/",
+  // IMPORTANTE: NÃO definir atributo Domain (cookie host-only). O frontend agora é
+  // servido pelo Vercel e o /api é proxado para o Render na MESMA origem; o cookie
+  // precisa ser gravado no domínio que o navegador realmente acessa (vercel.app).
+  // Se definíssemos Domain=.onrender.com, o navegador (em vercel.app) rejeitaria o
+  // Set-Cookie (domínio não casa com a origem) e a sessão não persistiria.
 };
 
 function clearCookie(res) {

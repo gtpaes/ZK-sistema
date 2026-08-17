@@ -15,9 +15,19 @@
  *   await Api.settings.get()  /  Api.settings.set(patch)
  */
 const Api = (() => {
-  const BASE =
-    (typeof window !== "undefined" && window.API_URL) ||
-    "https://zk-surfhouse-api.onrender.com/";
+  const LOCAL_API = "http://localhost:5000/api";
+  const SAME_ORIGIN_API = "/api"; // produção: mesma origem (Vercel proxy -> Render)
+
+  const isLocalRuntime =
+    typeof window !== "undefined" && (
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1" ||
+      window.location.protocol === "file:"
+    );
+
+  // Em produção usa /api relativo (mesma origem): o Vercel faz proxy para o Render,
+  // o que torna o cookie same-site e corrige o bloqueio do Safari/iOS.
+  const BASE = isLocalRuntime ? LOCAL_API : (window.API_URL || SAME_ORIGIN_API);
   const HEADERS = { "Content-Type": "application/json" };
 
   /** Envolve fetch; desempacota { success, data, message }; lança em erro. */

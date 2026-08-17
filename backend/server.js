@@ -19,12 +19,28 @@ const { notFound, errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const isProd = process.env.NODE_ENV === "production";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5500";
-// Em dev o frontend é servido estático na MESMA porta da API (:PORT).
-// POSTs mesmo-origem ainda enviam header Origin, então essas origens
-// precisam estar liberadas no CORS para o login não ser bloqueado.
+
+// Normaliza uma URL para apenas a ORIGEM (protocolo + host + porta), ignorando
+// caminho e barra final. O navegador envia o header `Origin` somente como
+// "https://gtpaes.github.io" — NUNCA com o caminho "/ZK-sistema/" — então é
+// essencial reduzir FRONTEND_URL à origem antes de comparar no CORS.
+const normalizeOrigin = (u) => {
+  if (!u) return u;
+  try {
+    return new URL(u).origin; // ex.: "https://gtpaes.github.io/ZK-sistema/" -> "https://gtpaes.github.io"
+  } catch {
+    return String(u).replace(/\/+$/, "");
+  }
+};
+
+// Em produção casa exatamente a origem do frontend (GitHub Pages).
+// Em dev o frontend é servido estático na MESMA porta da API (:PORT), mas os
+// POSTs mesmo-origem ainda enviam header Origin, então essas origens de
+// desenvolvimento precisam estar liberadas para o login não ser bloqueado.
 const ALLOWED_ORIGINS = [
-  FRONTEND_URL,
+  normalizeOrigin(FRONTEND_URL),
   "http://localhost:5500",
   "http://127.0.0.1:5500",
   `http://localhost:${PORT}`,
@@ -33,10 +49,21 @@ const ALLOWED_ORIGINS = [
 const path = require('path');
 
 /* ---------- Middleware globais ---------- */
+// Hardening de produção: HSTS faz o navegador sempre usar HTTPS no domínio da
+// API, o que ajuda o Safari/iOS a tratar corretamente o cookie Secure. Só é
+// enviado em produção (a API do Render já é HTTPS); em dev (localhost HTTP)
+// fica desativado para não quebrar o ambiente local.
+app.use((req, res, next) => {
+  if (isProd) {
+    res.setHeader("Strict-Transport-Security", "max-age=15552000");
+  }
+  next();
+});
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      if (!origin || ALLOWED_ORIGINS.includes(normalizeOrigin(origin))) {
         return callback(null, true);
       }
       callback(new Error(`CORS origin denied: ${origin}`));
