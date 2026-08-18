@@ -2,8 +2,8 @@
  * models/Produto.js — Modelo de Produto
  *
  * Compatível com os dados existentes no localStorage:
- *   id, nome, categoria, codigo, preco, quantidade, fornecedor, descricao,
- *   criadoEm, atualizadoEm
+ *   id, nome, categoria, codigo, preco, custoUnitario, quantidade, fornecedor,
+ *   descricao, criadoEm, atualizadoEm
  */
 
 const mongoose = require("mongoose");
@@ -16,6 +16,9 @@ const produtoSchema = new mongoose.Schema(
     categoria: { type: String, trim: true },
     codigo: { type: String, trim: true },
     preco: { type: Number, default: 0, min: 0 },
+    // Custo de aquisição por unidade (padrão). Produtos antigos sem custo
+    // permanecem com 0 — nunca inventamos valores retroativos.
+    custoUnitario: { type: Number, default: 0, min: 0 },
     quantidade: { type: Number, default: 0, min: 0 },
     estoqueMinimo: { type: Number, default: null, min: 0 },
     fornecedor: { type: String, trim: true },

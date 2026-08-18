@@ -1,7 +1,7 @@
 /** financeiro.js — Fluxo de caixa (entradas e saídas) com filtros e resumo */
 
 const Financeiro = (() => {
-  const CATEGORIAS = ["Venda", "Conserto", "Mensalidade", "Fornecedor", "Aluguel", "Salário", "Marketing", "Outros"];
+  const CATEGORIAS = ["Venda", "Conserto", "Mensalidade", "Fornecedor", "Produto / Estoque", "Aluguel", "Salário", "Marketing", "Outros"];
   const state = { tipo: "", mes: new Date().toISOString().slice(0, 7), page: 1, perPage: 10 };
 
   const doMes = (list) => list.filter((f) => (f.data || "").slice(0, 7) === state.mes);
@@ -40,7 +40,7 @@ const Financeiro = (() => {
               ${pageList.length
                 ? pageList.map((f) => `
                   <tr>
-                    <td><strong>${Utils.escape(f.descricao || "—")}</strong></td>
+                    <td><div class="cell-stack"><strong>${Utils.escape(f.descricao || "—")}</strong>${f.origem === "produto" ? `<small>Compra de produto${f.produtoId ? " (vínculo mantido)" : ""}</small>` : `<small style="visibility:hidden">·</small>`}</div></td>
                     <td>${Utils.escape(f.categoria || "—")}</td>
                     <td><span class="badge badge--${f.tipo === "entrada" ? "success" : "danger"}">${f.tipo === "entrada" ? "Entrada" : "Saída"}</span></td>
                     <td><strong>${Utils.money(f.valor)}</strong></td>

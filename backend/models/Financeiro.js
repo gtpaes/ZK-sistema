@@ -3,9 +3,9 @@
  *
  * Compatível com os dados existentes no localStorage:
  *   id, tipo (entrada/saida), categoria, descricao, valor, data,
- *   origem (venda/conserto/confeccao/guarderia/aula), + campos de vínculo
- *   (vendaId, consertoId, confeccaoId, guarderiaId, assinaturaId, alunoId),
- *   criadoEm
+ *   origem (venda/conserto/confeccao/guarderia/aula/produto), + campos de vínculo
+ *   (vendaId, consertoId, confeccaoId, guarderiaId, assinaturaId, alunoId,
+ *   produtoId, movimentoId), criadoEm
  */
 
 const mongoose = require("mongoose");
@@ -23,7 +23,7 @@ const financeiroSchema = new mongoose.Schema(
     // Origem da transação
     origem: {
       type: String,
-      enum: ["venda", "conserto", "confeccao", "guarderia", "aula", "manual", ""],
+      enum: ["venda", "conserto", "confeccao", "guarderia", "aula", "produto", "manual", ""],
       default: "manual",
     },
 
@@ -34,6 +34,10 @@ const financeiroSchema = new mongoose.Schema(
     guarderiaId: { type: String, default: null },
     assinaturaId: { type: String, default: null },
     alunoId: { type: String, default: null },
+
+    // Vínculo com compras de produto/estoque
+    produtoId: { type: String, default: null },
+    movimentoId: { type: String, default: null },
 
     // Metadados adicionais da guarderia
     referencia: { type: String, default: null },

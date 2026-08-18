@@ -3,7 +3,7 @@
  *
  * Compatível com os dados existentes no localStorage:
  *   id, produtoId, produto, tipo (entrada/saida), quantidade, motivo, data,
- *   criadoEm
+ *   custoUnitario, custoTotal, criadoEm
  */
 
 const mongoose = require("mongoose");
@@ -16,6 +16,10 @@ const movimentacaoSchema = new mongoose.Schema(
     produto: { type: String, trim: true },
     tipo: { type: String, enum: ["entrada", "saida"], required: true },
     quantidade: { type: Number, required: true, min: 0 },
+    // Custo da compra registrado NESTA movimentação (histórico preservado).
+    // Custos diferentes ao longo do tempo ficam registrados por entrada.
+    custoUnitario: { type: Number, default: 0, min: 0 },
+    custoTotal: { type: Number, default: 0, min: 0 },
     motivo: { type: String, trim: true },
     data: { type: String, default: () => new Date().toISOString() },
     criadoEm: { type: String, default: () => new Date().toISOString() },
