@@ -456,6 +456,9 @@ return UI.confirm({
 const Estoque = (() => {
   const state = { tipo: "", term: "", page: 1, perPage: 8, pageProd: 1, perPageProd: 8 };
 
+  const stack = (top, bottom) =>
+    `<div class="cell-stack"><strong>${top}</strong><small>${bottom}</small></div>`;
+
   function badgeInv(p) {
     const q = Number(p.quantidade) || 0;
     if (q <= 0) return `<span class="badge badge--danger">Sem estoque</span>`;

@@ -43,11 +43,52 @@
   .grid-3 {
     grid-template-columns: 1fr;
   }
+
+  /* ===== Barra de navegação inferior (mobile/tablet) ===== */
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 16px rgba(16, 60, 40, 0.08);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .bn-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 9px 2px 8px;
+    font-family: var(--font-body);
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: none;
+    border: 0;
+    cursor: pointer;
+    transition: color var(--t);
+  }
+  .bn-item i {
+    font-size: 17px;
+  }
+  .bn-item.is-active {
+    color: var(--primary);
+  }
+  /* Espaço para a barra não cobrir o fim do conteúdo */
+  .content {
+    padding-bottom: 84px;
+  }
 }
 
 @media (max-width: 768px) {
   .content {
-    padding: 18px 14px;
+    padding: 18px 14px 84px;
   }
   .topbar {
     padding: 12px 14px;
@@ -88,12 +129,23 @@
   .kpi__value {
     font-size: 22px;
   }
+  /* Modal como "bottom sheet": sobe de baixo da tela, fácil de alcançar */
   .modal__box {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
     margin: 0;
-    width: 100%;
-    height: 100%;
-    max-height: 100%;
-    border-radius: 0;
+    width: 100% !important; /* vence o width inline definido pelo JS */
+    max-width: 100%;
+    height: auto;
+    max-height: 92vh;
+    border-radius: 20px 20px 0 0;
+    animation: sheetUp 0.25s ease both;
+  }
+  .modal__body {
+    max-height: calc(92vh - 140px);
+    -webkit-overflow-scrolling: touch;
   }
   .toasts {
     left: 14px;
@@ -106,14 +158,155 @@
   .donut-wrap {
     justify-content: center;
   }
+
+  /* ===== Mobile layout fixes ===== */
+
+  /* Receipt metadata — stack on mobile (desktop: repeat(3, 1fr)) */
+  .receipt__meta {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  /* Toolbar — reduce search min-width so select/button can stay inline */
+  .toolbar .search {
+    min-width: 160px;
+  }
+
+  /* PDV grid — single card per row on mobile for bigger touch targets */
+  .pdv-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Pagination — slightly smaller buttons at tablet breakpoint */
+  .page-btn {
+    min-width: 30px;
+    height: 30px;
+  }
+
+  @keyframes sheetUp {
+    from {
+      transform: translateY(48px);
+      opacity: 0;
+    }
+  }
+
+  /* ===== Tabelas como cards no celular =====
+     Cada linha vira um bloco vertical com rótulo (data-label preenchido
+     pelo app.js) + valor. Acaba com a rolagem horizontal. */
+  .table-wrap {
+    overflow-x: visible;
+  }
+  .table {
+    min-width: 0;
+  }
+  .table thead {
+    display: none;
+  }
+  .table tbody {
+    display: block;
+  }
+  .table tr {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    padding: 4px 14px;
+    box-shadow: var(--shadow-sm);
+  }
+  .table tr:last-child {
+    margin-bottom: 0;
+  }
+  .table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: right;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .table td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    text-align: left;
+    white-space: normal;
+  }
+  .table td:last-child {
+    border-bottom: 0;
+  }
+  /* Linhas de estado vazio / mensagens ocupam o bloco inteiro, sem rótulo */
+  .table td[colspan] {
+    display: block;
+    text-align: center;
+    padding: 18px 8px;
+  }
+  .table td[colspan]::before {
+    content: none;
+  }
+  .row-actions {
+    justify-content: flex-end;
+  }
 }
 
 @media (max-width: 480px) {
+  /* Page actions — stat-strip full-width on top, buttons below */
+  .page-actions .stat-strip {
+    flex: 0 0 100% !important;
+    margin-bottom: 10px !important;
+  }
+  /* Stat strip — single column of mini-stats on very small screens */
+  .stat-strip {
+    grid-template-columns: 1fr;
+  }
+  /* Buttons — equal width, side-by-side */
   .page-actions .btn {
     flex: 1;
     justify-content: center;
   }
+  /* Pagination — compact on very small screens */
   .pagination {
     flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px 14px;
+  }
+  .pagination .info {
+    font-size: 11px;
+  }
+  .page-btn {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    font-size: 12px;
+  }
+  /* Cart items — stack on very small screens (1fr auto auto auto is too cramped) */
+  .cart-item {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  /* Toolbar — reduce search min-width further on very small screens */
+  .toolbar .search {
+    min-width: 140px;
+  }
+
+  /* Filtros da toolbar empilham em largura total no celular */
+  .toolbar > select,
+  .toolbar > button,
+  .toolbar > input:not([type="search"]) {
+    flex: 1 1 100%;
+    max-width: none !important;
+  }
+
+  /* Área de toque maior nos botões principais */
+  .btn {
+    min-height: 42px;
+  }
+  .page-actions .btn {
+    min-height: 44px;
   }
 }

@@ -872,6 +872,11 @@ table.table {
 .only-mobile {
   display: none;
 }
+
+/* Barra de navegação inferior — existe apenas no mobile (responsive.css exibe) */
+.bottom-nav {
+  display: none;
+}
 .soon {
   display: grid;
   place-items: center;

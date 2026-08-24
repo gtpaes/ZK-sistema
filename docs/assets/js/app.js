@@ -19,6 +19,24 @@ const App = (() => {
 
   let current = "dashboard";
 
+  /* ---------- Mobile: prepara tabelas para exibição em cards ----------
+     Copia o texto dos <th> para data-label de cada <td>. O CSS de
+     responsive.css transforma as linhas em blocos verticais no celular,
+     usando esses rótulos. No desktop nada muda. */
+  function enhanceTables(root) {
+    root.querySelectorAll("table").forEach((tb) => {
+      const heads = [...tb.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+      tb.querySelectorAll("tbody tr").forEach((tr) => {
+        // Linhas de estado vazio (colspan) não recebem rótulos
+        if (tr.querySelector("[colspan]")) return;
+        [...tr.children].forEach((td, i) => {
+          const label = heads[i];
+          if (label && !td.dataset.label) td.dataset.label = label;
+        });
+      });
+    });
+  }
+
   /* ---------- Renderização ---------- */
   function render(keepFocus = false) {
     const page = PAGES[current];
@@ -41,6 +59,9 @@ const App = (() => {
 
     page.module?.().mount?.(fresh);
 
+    // Mobile: rotula células das tabelas para o modo "cards" (ver responsive.css)
+    if (window.matchMedia("(max-width: 768px)").matches) enhanceTables(fresh);
+
     if (focused) {
       const el = fresh.querySelector(`#${focused}`);
       if (el) {
@@ -56,6 +77,10 @@ const App = (() => {
     if (!PAGES[page]) return;
     current = page;
     document.querySelectorAll(".nav__item").forEach((n) =>
+      n.classList.toggle("is-active", n.dataset.page === page)
+    );
+    // Sincroniza o destaque na barra inferior (mobile)
+    document.querySelectorAll(".bottom-nav [data-page]").forEach((n) =>
       n.classList.toggle("is-active", n.dataset.page === page)
     );
     closeSidebar();
@@ -119,6 +144,13 @@ const App = (() => {
     UI.$("#btnTheme").onclick = toggleTheme;
     UI.$("#btnMenu").onclick = openSidebar;
     UI.$("#sidebarBackdrop").onclick = closeSidebar;
+
+    // Barra de navegação inferior (mobile): páginas rápidas + abrir menu completo
+    document.querySelectorAll(".bottom-nav [data-page]").forEach((item) =>
+      item.addEventListener("click", () => navigate(item.dataset.page))
+    );
+    const bnMenu = UI.$("#bnMenu");
+    if (bnMenu) bnMenu.onclick = openSidebar;
 
     const logoutBtn = UI.$("#btnLogout");
     if (logoutBtn) {
