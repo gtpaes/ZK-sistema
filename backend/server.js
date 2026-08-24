@@ -13,6 +13,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const compression = require("compression");
 const connectDB = require("./config/db");
 const routes = require("./routes/index");
 const { notFound, errorHandler } = require("./middleware/errorHandler");
@@ -72,6 +73,8 @@ app.use(
   })
 );
 app.use(cookieParser());
+// Compressão gzip: reduz drasticamente o tamanho do JSON transferido ao frontend
+app.use(compression());
 app.use(express.json({ limit: "25mb" })); // suporta fotos base64 comprimidas
 app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 

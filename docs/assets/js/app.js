@@ -152,6 +152,13 @@ const App = (() => {
     const bnMenu = UI.$("#bnMenu");
     if (bnMenu) bnMenu.onclick = openSidebar;
 
+    // Quando o refresh em segundo plano do cache local termina,
+    // atualiza a tela silenciosamente com os dados frescos do Atlas.
+    window.addEventListener("db:refreshed", () => {
+      applySettings();
+      refresh(true);
+    });
+
     const logoutBtn = UI.$("#btnLogout");
     if (logoutBtn) {
       logoutBtn.onclick = () => {

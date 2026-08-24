@@ -28,6 +28,23 @@ const DB = (() => {
   let settings = { empresa: "ZK SurfHouse", admin: "Administrador", cargo: "Acesso total", tema: "light", estoqueMinimo: 5 };
   let ready = false;
 
+  /* ---------- Cache local (localStorage): abertura instantânea ----------
+     Salva o estado do cache no navegador e o recarrega no próximo acesso,
+     evitando esperar todas as coleções do Atlas antes de renderizar. */
+  const LS_KEY = "zk-cache-v1";
+  let saveTimer = null;
+  function saveLocalNow() {
+    try {
+      const dump = { settings: { ...settings } };
+      COLLECTIONS.forEach((c) => (dump[c] = cache[c] || []));
+      localStorage.setItem(LS_KEY, JSON.stringify(dump));
+    } catch { /* cota excedida — segue apenas com cache em memória */ }
+  }
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveLocalNow, 1500);
+  }
+
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const softToast = (m, t = "error") => { try { if (typeof UI !== "undefined" && UI.toast) UI.toast(m, t); } catch { /* UI ainda nao carregado */ } };
 
@@ -58,6 +75,7 @@ const DB = (() => {
         const rec = { id: uid(), criadoEm: new Date().toISOString(), ...data };
         arr().push(rec);
         persist(name, "insert", rec);
+        scheduleSave();
         return rec;
       },
       update(id, data) {
@@ -66,12 +84,14 @@ const DB = (() => {
         if (i === -1) return null;
         list[i] = { ...list[i], ...data, atualizadoEm: new Date().toISOString() };
         persist(name, "update", list[i]);
+        scheduleSave();
         return list[i];
       },
       remove(id) {
         const list = arr();
         const i = list.findIndex((r) => r.id === id);
         if (i !== -1) { list.splice(i, 1); persist(name, "remove", { id }); }
+        scheduleSave();
       },
       save(list) { cache[name] = list || []; return cache[name]; },
     };
@@ -80,15 +100,41 @@ const DB = (() => {
   const cols = {};
   COLLECTIONS.forEach((c) => (cols[c] = collection(c)));
 
-    /** Carrega todas as coleções + settings do backend (chamar uma vez no startup). */
+    /** Carrega todas as coleções + settings. Com cache local disponível,
+     *  hidrata instantaneamente (app abre na hora) e atualiza do backend
+     *  em segundo plano, disparando o evento "db:refreshed" no fim. */
   async function init() {
     if (ready) return true;
+
+    // 1) Tenta hidratar do localStorage (instantâneo)
+    let hidratado = false;
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        const dump = JSON.parse(raw);
+        COLLECTIONS.forEach((c) => { if (Array.isArray(dump[c])) cache[c] = dump[c]; });
+        if (dump.settings && typeof dump.settings === "object") settings = { ...settings, ...dump.settings };
+        hidratado = true;
+        ready = true;
+      }
+    } catch { /* cache corrompido — ignora e carrega do backend */ }
+
+    // 2) Atualização em segundo plano + evento para re-render
+    const atualizarDepois = () =>
+      Promise.resolve(refresh())
+        .then(() => { saveLocalNow(); window.dispatchEvent(new CustomEvent("db:refreshed")); })
+        .catch((e) => console.warn("[DB] refresh em segundo plano:", e && e.message));
+
+    if (hidratado) { atualizarDepois(); return true; }
+
+    // Sem cache local: carrega tudo do backend (primeiro acesso)
     await Promise.all(COLLECTIONS.map((c) => Promise.resolve()
       .then(() => R[c] && R[c].all())
       .then((d) => { cache[c] = Array.isArray(d) ? d : []; })
       .catch((e) => { console.warn(`[DB] carregar ${c}:`, e.message); cache[c] = []; })));
     try { settings = await Api.settings.get(); } catch (e) { console.warn("[DB] settings:", e.message); }
     ready = true;
+    saveLocalNow();
     return true;
   }
 
@@ -115,6 +161,7 @@ const DB = (() => {
       if (!dump || typeof dump !== "object") throw new Error("Arquivo invalido");
       const res = await Api.migracao.importar(dump);
       await refresh();
+      saveLocalNow();
       return res;
     },
     async clearAll() {
@@ -124,6 +171,7 @@ const DB = (() => {
         if (a) { try { const list = await a.all(); await Promise.all(list.map((r) => a.remove(r.id))); } catch (e) { console.warn(`[DB] clearAll ${c}:`, e.message); } }
       }));
       try { settings = await Api.settings.get(); } catch (e) { console.warn("[DB] clearAll settings:", e.message); }
+      saveLocalNow();
       ready = false;
       return true;
     },

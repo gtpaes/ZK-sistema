@@ -23,8 +23,10 @@
   .main {
     margin-left: 0;
   }
+  /* Menu superior removido no mobile: a navegação é feita
+     exclusivamente pela barra inferior (.bottom-nav). */
   .only-mobile {
-    display: grid;
+    display: none;
   }
   .sidebar-backdrop {
     display: block;

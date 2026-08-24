@@ -155,6 +155,9 @@
 
       const init = () => {
         Theme.init();
+        // Aquece o backend em segundo plano (planos free "adormecem" o
+        // servidor): evita esperar o cold start ao submeter o login.
+        try { fetch(window.API_URL + "/health", { credentials: "include" }).catch(() => {}); } catch {}
         const form = document.querySelector("#loginForm");
         form.addEventListener("submit", async (event) => {
           event.preventDefault();
